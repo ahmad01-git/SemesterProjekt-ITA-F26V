@@ -4,11 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Semester Projekt</title>
+    <!-- Tailwind CSS via CDN for nem opsætning -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {}
+        }
+      }
+    </script>
 </head>
-<body>
+<body class="bg-zinc-100 text-zinc-900 font-sans p-8">
 
-    <h1>Mit projekt 🚀</h1>
-    <p>Det virker!</p>
+    <h1 class="text-4xl font-bold mb-4">Mit projekt 🚀</h1>
+    <p class="text-lg">Det virker! Nu kan I begynde at bygge jeres UI her.</p>
 
 </body>
 </html>

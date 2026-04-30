@@ -1,0 +1,34 @@
+{
+  "name": "semesterprojekt-ita-f26v",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js",
+    "build:css": "tailwindcss -i ./frontend/styles.css -o ./frontend/output.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ahmad01-git/SemesterProjekt-ITA-F26V.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ahmad01-git/SemesterProjekt-ITA-F26V/issues"
+  },
+  "homepage": "https://github.com/ahmad01-git/SemesterProjekt-ITA-F26V#readme",
+  "dependencies": {
+    "csv-parser": "^3.2.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.12",
+    "tailwindcss": "^4.2.4"
+  }
+}
