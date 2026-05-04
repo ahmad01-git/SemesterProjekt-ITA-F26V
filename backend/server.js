@@ -23,3 +23,13 @@ app.get('/api/db', async (req, res) => {
     res.status(500).send('DB fejl');
   }
 });
+
+app.get('/api/songs', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM songs LIMIT 20');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Fejl ved hentning af sange');
+  }
+});
