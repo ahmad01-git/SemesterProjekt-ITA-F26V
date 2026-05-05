@@ -1,13 +1,14 @@
-import pool from './connect.js'
-import fs from 'fs'
-import csv from 'csv-parser'
-import path from 'path'
+
+const pool = require('./connect')
+const fs = require('fs')
+const csv = require('csv-parser')
+const path = require('path')
 
 async function createTables() {
   try {
-    // Slet tabellen hvis den findes, så vi starter forfra med det nye Elo-design
+    // Vi sletter tabellen først så vi starter helt forfra hver gang
     await pool.query('DROP TABLE IF EXISTS tracks')
-    
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS tracks (
         id            SERIAL PRIMARY KEY,
@@ -30,76 +31,109 @@ async function createTables() {
   }
 }
 
-async function importTracks() {
-  const results = [];
-  console.log('Begynder at læse CSV filen...');
-
-  // 1. Skab en "læsestrøm" (ReadStream) fra din dataset.csv
-  fs.createReadStream('./db/dataset.csv')
-
-    // 2. Kør den igennem csv-parseren
-    .pipe(csv())
-
-    // 3. Hver gang parseren finder en ny række med data, affyres 'data' eventet
-    .on('data', (row) => {
-      // Tilføj rækken til vores array
-      results.push(row);
-    })
-
-    // 4. Når hele filen er læst færdig, affyres 'end' eventet
-    .on('end', async () => {
-      console.log(`Færdig med at læse! Fandt ${results.length} sange.`);
-      console.log('Starter indsættelse i databasen...');
-
-      let count = 0;
-      const amountToImport = Math.min(results.length, 1000); // Vi importerer max 1000 sange for at det går hurtigt
-
-      // For-loop igennem sangene
-      for (let i = 0; i < amountToImport; i++) {
-        const sang = results[i];
-        
-        // Beregn start Elo ud fra popularity (0-100)
-        const pop = parseInt(sang.popularity) || 0;
-        const startElo = 1000 + (pop * 5);
-
-        try {
-          await pool.query(`
-            INSERT INTO tracks (track_id, title, artist, genre, duration_ms, popularity, danceability, energy, valence, tempo, elo_rating)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
-            ON CONFLICT (track_id) DO NOTHING
-          `, [
-            sang.track_id,
-            sang.track_name,
-            sang.artists,
-            sang.track_genre,
-            parseInt(sang.duration_ms) || 0,
-            pop,
-            parseFloat(sang.danceability) || 0,
-            parseFloat(sang.energy) || 0,
-            parseFloat(sang.valence) || 0,
-            parseFloat(sang.tempo) || 0,
-            startElo
-          ]);
-          count++;
-        } catch (err) {
-          console.error("Fejl ved sang", sang.track_name, err);
-        }
-      }
-
-      console.log('Færdig med at importere til databasen!');
-      process.exit(0);
-    });
-}
-
-// Vi samler det hele i en main() funktion for at sikre den rigtige rækkefølge
-async function main() {
+// Denne funktion fjerner alt det "skrald" vi ikke skal bruge, 
+// så vi kun beholder top 100 sange fra hver genre baseret på popularitet.
+async function filterTopTracks() {
   try {
-    await createTables();
-    await importTracks();
-  } catch (error) {
-    console.error("Noget gik helt galt i hovedfunktionen:", error);
+    console.log('Finder alle de gode sange baby, ud fra hver genre')
+
+    // så basic vi sletter sange der ikke er top 100 fra hver genre
+    await pool.query(`
+      DELETE FROM tracks
+      WHERE id NOT IN (
+        SELECT id
+        FROM (
+          SELECT id,
+                 ROW_NUMBER() OVER (
+                   PARTITION BY genre 
+                   ORDER BY popularity DESC
+                 ) AS rank
+          FROM tracks
+        ) AS ranked
+        WHERE rank <= 100
+      );
+    `)
+
+    const finalCount = await pool.query('SELECT COUNT(*) FROM tracks')
+    console.log(`Færdig! Vi har fundet de bedste sange baby og gemt dem i databasen. Der er nu ${finalCount.rows[0].count} sange tilbage (Top 100 per genre).`)
+
+  } catch (err) {
+    console.error('Fejl i filterTopTracks:', err)
   }
 }
 
-// Start programmet
-main();
+async function importTracks() {
+  const results = []
+  console.log('Begynder at læse CSV filen...')
+
+  return new Promise(function (resolve, reject) {
+    fs.createReadStream(path.join(__dirname, 'dataset.csv'))
+      .pipe(csv())
+      .on('data', function (row) {
+        results.push(row)
+      })
+      .on('end', async function () {
+        console.log(`Færdig med at læse! Fandt ${results.length} sange i CSV filen.`)
+        console.log('Starter indsættelse i databasen (dette kan tage et øjeblik da vi tager det hele)...')
+
+        let count = 0
+        // Vi fjerner limit, så vi får ALT ind først, så vi kan finde de bedste sange på tværs af hele filen
+        for (let i = 0; i < results.length; i++) {
+          const sang = results[i]
+          const pop = parseInt(sang.popularity) || 0
+          const startElo = 1000 + (pop * 5)
+
+          try {
+            await pool.query(`
+              INSERT INTO tracks 
+                (track_id, title, artist, genre, duration_ms, popularity, danceability, energy, valence, tempo, elo_rating)
+              VALUES 
+                ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+              ON CONFLICT (track_id) DO NOTHING
+            `, [
+              sang.track_id,
+              sang.track_name,
+              sang.artists,
+              sang.track_genre,
+              parseInt(sang.duration_ms) || 0,
+              pop,
+              parseFloat(sang.danceability) || 0,
+              parseFloat(sang.energy) || 0,
+              parseFloat(sang.valence) || 0,
+              parseFloat(sang.tempo) || 0,
+              startElo
+            ])
+            count++
+
+            // Vis fremskridt for hver 5000. sang så brugeren ikke tror den er gået i stå
+            if (count % 5000 === 0) {
+              console.log(`Indsat ${count} sange...`)
+            }
+          } catch (err) {
+            // Vi logger ikke alle fejl for at undgå at fylde terminalen
+          }
+        }
+
+        console.log(`${count} sange indsat i alt.`)
+        resolve()
+      })
+      .on('error', reject)
+  })
+}
+
+async function main() {
+  // så vi skal jo først starte med at oprette tabellerne, derefter importere sange, 
+  // derefter lave toptracks ved at tage top 100 sange fra hver genre og putter ind i en ny tabel
+  // og så lukke database forbindelsen, og til sidst viser vi at databasen er klar. 
+  try {
+    await createTables()
+    await importTracks()
+    await filterTopTracks()
+    await pool.end()
+    console.log('Database er 100% klar med top-tracks fra alle genrer!')
+  } catch (error) {
+    console.error('Noget gik galt i main:', error)
+  }
+}
+
+main()
