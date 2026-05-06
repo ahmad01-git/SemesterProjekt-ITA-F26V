@@ -4,23 +4,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Semester Projekt</title>
-  <!-- Tailwind CSS DEN SKAL DU BRUGE -->
+  <title>Next-Track</title>
+
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {}
-      }
-    }
-  </script>
 </head>
 
 <body class="bg-blue-100 text-zinc-900 font-sans p-8">
 
+  <!-- HEADER -->
   <header class="max-w-6xl mx-auto px-8 py-16 text-center">
-  
-
     <h1 class="text-5xl font-black mb-6">
       Next-Track
     </h1>
@@ -35,6 +28,7 @@
     </a>
   </header>
 
+  <!-- FUNKTIONER -->
   <section id="funktioner" class="max-w-6xl mx-auto rounded-3xl p-8 mb-8">
     <h2 class="text-3xl font-bold mb-3">Basale funktioner</h2>
 
@@ -44,22 +38,22 @@
 
     <div class="grid md:grid-cols-4 gap-4">
 
-      <div class="bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition">
+      <div class="bg-white rounded-2xl p-6 shadow-md">
         <h3 class="text-xl font-bold mb-2">🎵 Spil sang</h3>
         <p class="text-gray-600 text-sm">Afspil den valgte sang direkte.</p>
       </div>
 
-      <div class="bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition">
+      <div class="bg-white rounded-2xl p-6 shadow-md">
         <h3 class="text-xl font-bold mb-2">🔍 Søge</h3>
         <p class="text-gray-600 text-sm">Søg efter sang, kunstner eller genre.</p>
       </div>
 
-      <div class="bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition">
+      <div class="bg-white rounded-2xl p-6 shadow-md">
         <h3 class="text-xl font-bold mb-2">📋 Kø</h3>
         <p class="text-gray-600 text-sm">Sæt sange i kø til næste afspilning.</p>
       </div>
 
-      <div class="bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition">
+      <div class="bg-white rounded-2xl p-6 shadow-md">
         <h3 class="text-xl font-bold mb-2">📺 Visning</h3>
         <p class="text-gray-600 text-sm">Se nuværende sang, kunstner, genre og kø.</p>
       </div>
@@ -67,55 +61,89 @@
     </div>
   </section>
 
+  <!-- JUKEBOX -->
   <section class="max-w-6xl mx-auto px-8 py-12">
-  <h2 class="text-3xl font-bold mb-6">Jukebox</h2>
+    <h2 class="text-3xl font-bold mb-6">Jukebox</h2>
 
-  <div class="grid lg:grid-cols-3 gap-6">
+    <div class="grid lg:grid-cols-3 gap-6">
 
-    <div class="lg:col-span-2 bg-white rounded-3xl p-6 shadow-md">
-      <h3 class="text-2xl font-bold mb-4">Søg musik</h3>
+      <!-- VENSTRE SIDE -->
+      <div class="lg:col-span-2 bg-white rounded-3xl p-6 shadow-md">
+        <h3 class="text-2xl font-bold mb-4">Søg musik</h3>
 
-      <input
-        type="text"
-        placeholder="Søg efter sang, kunstner eller genre"
-        class="w-full rounded-2xl border border-gray-200 px-5 py-4 mb-6 outline-none focus:ring-2 focus:ring-zinc-900"
-      >
+        <input
+          id="searchInput"
+          type="text"
+          placeholder="Søg efter sang, kunstner eller genre"
+          class="w-full rounded-2xl border border-gray-200 px-5 py-4 mb-6 outline-none focus:ring-2 focus:ring-zinc-900"
+        >
 
-      <div class="space-y-4">
-        <div class="bg-zinc-100 rounded-2xl p-5 flex justify-between items-center">
-          <div>
-            <h4 class="font-bold text-lg">Blinding Lights</h4>
-            <p class="text-gray-600">The Weeknd · Pop</p>
+        <!-- SANG LISTE -->
+        <div id="songList" class="space-y-4">
+
+          <!-- SANG 1 -->
+          <div class="bg-zinc-100 rounded-2xl p-5 flex justify-between items-center">
+            <div>
+              <h4 class="font-bold text-lg">Blinding Lights</h4>
+              <p class="text-gray-600">The Weeknd · Pop</p>
+            </div>
+
+            <div class="flex gap-3">
+              <button class="bg-green-500 text-white px-4 py-2 rounded-xl font-bold">Afspil</button>
+              <button class="bg-orange-500 text-white px-4 py-2 rounded-xl font-bold">Tilføj</button>
+            </div>
           </div>
 
-          <div class="flex gap-3">
-            <button class="bg-green-500 text-white px-4 py-2 rounded-xl font-bold">
-              Afspil
-            </button>
-            <button class="bg-orange-500 text-white px-4 py-2 rounded-xl font-bold">
-              Tilføj
-            </button>
+          <!-- SANG 2 -->
+          <div class="bg-zinc-100 rounded-2xl p-5 flex justify-between items-center">
+            <div>
+              <h4 class="font-bold text-lg">Shape of You</h4>
+              <p class="text-gray-600">Ed Sheeran · Pop</p>
+            </div>
+
+            <div class="flex gap-3">
+              <button class="bg-green-500 text-white px-4 py-2 rounded-xl font-bold">Afspil</button>
+              <button class="bg-orange-500 text-white px-4 py-2 rounded-xl font-bold">Tilføj</button>
+            </div>
           </div>
+
+          <!-- SANG 3 -->
+          <div class="bg-zinc-100 rounded-2xl p-5 flex justify-between items-center">
+            <div>
+              <h4 class="font-bold text-lg">Lose Yourself</h4>
+              <p class="text-gray-600">Eminem · Rap</p>
+            </div>
+
+            <div class="flex gap-3">
+              <button class="bg-green-500 text-white px-4 py-2 rounded-xl font-bold">Afspil</button>
+              <button class="bg-orange-500 text-white px-4 py-2 rounded-xl font-bold">Tilføj</button>
+            </div>
+          </div>
+
         </div>
       </div>
-    </div>
 
-    <div class="space-y-6">
-      <div class="bg-white rounded-3xl p-6 shadow-md">
-        <h3 class="text-2xl font-bold mb-4">Spiller nu</h3>
-        <p class="text-gray-600">Ingen sang valgt endnu</p>
+      <!-- HØJRE SIDE -->
+      <div class="space-y-6">
+
+        <!-- SPILLER NU -->
+        <div class="bg-white rounded-3xl p-6 shadow-md">
+          <h3 class="text-2xl font-bold mb-4">Spiller nu</h3>
+          <p id="nowPlaying" class="text-gray-600">Ingen sang valgt endnu</p>
+        </div>
+
+        <!-- KØ -->
+        <div class="bg-white rounded-3xl p-6 shadow-md">
+          <h3 class="text-2xl font-bold mb-4">Kø</h3>
+          <div id="queueList" class="text-gray-600">
+            Køen er tom.
+          </div>
+        </div>
+
       </div>
 
-      <div class="bg-white rounded-3xl p-6 shadow-md">
-        <h3 class="text-2xl font-bold mb-4">Kø</h3>
-        <p class="text-gray-600">Køen er tom.</p>
-      </div>
     </div>
-
-  </div>
-</section>
+  </section>
 
 </body>
-</body>
-
 </html>
