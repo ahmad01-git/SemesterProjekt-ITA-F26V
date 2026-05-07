@@ -22,9 +22,22 @@ async function createTables() {
         energy        DECIMAL(4,3),
         valence       DECIMAL(4,3),
         tempo         DECIMAL(6,3),
-        elo_rating    INTEGER DEFAULT 1000
+        elo_rating    INTEGER DEFAULT 1000,
+        
+        /* OPGAVE: Tilføj to nye kolonner herunder:
+           1. win_count (skal være INTEGER og starte på 0)
+           2. play_count (skal være INTEGER og starte på 0)
+           Dette hjælper os med at se hvilke sange der faktisk bliver brugt!
+        */
+        
       )
     `)
+    
+    /* OPGAVE: Tilføj en SQL kommando herunder til at oprette et INDEX på 'genre'.
+       Det gør at når jeres brugere søger efter genre, så svarer databasen lynhurtigt.
+       Brug: CREATE INDEX IF NOT EXISTS idx_genre ON tracks(genre)
+    */
+
     console.log('Tabeller oprettet!')
   } catch (error) {
     console.error('Fejl ved oprettelse af tabeller:', error)
@@ -50,7 +63,7 @@ async function filterTopTracks() {
                  ) AS rank
           FROM tracks
         ) AS ranked
-        WHERE rank <= 100
+        WHERE rank <= 10
       );
     `)
 
