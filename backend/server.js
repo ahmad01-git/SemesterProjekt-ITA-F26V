@@ -1,70 +1,72 @@
-const pool = require('../db/connect');
 const express = require('express');
-const cors = require('cors');
+const path = require('path');
+const pool = require('../db/connect');
+
+const {
+    updateElo,
+    getTwoPairwiseSongs,
+    saveEloToDatabase,
+    getNextTrack
+} = require('./player');
 
 const app = express();
-
-app.use(express.json());
-app.use(cors()); // så frontend kan hente data
-
-// TEST
-app.get('/', (req, res) => {
-  res.send('Server virker!');
-});
-
-// TEST DATABASE
-app.get('/api/db', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT NOW()');
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('DB fejl');
-  }
-});
-
-
-// HENT SANGE (med søgning + sortering efter Elo)
-app.get('/api/songs', async (req, res) => {
-  try {
-    const search = req.query.search || '';
-
-    const result = await pool.query(
-      `SELECT * FROM tracks
-       WHERE title ILIKE $1
-       OR artist ILIKE $1
-       OR genre ILIKE $1
-       ORDER BY elo_rating DESC
-       LIMIT 20`,
-      [`%${search}%`]
-    );
-
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Fejl ved hentning af sange');
-  }
-});
-
-
-// AFSPIL SANG → øg Elo (simpel version)
-app.post('/api/play/:id', async (req, res) => {
-  try {
-    await pool.query(
-      'UPDATE tracks SET elo_rating = elo_rating + 10 WHERE id = $1',
-      [req.params.id]
-    );
-
-    res.json({ message: 'Elo opdateret' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Fejl ved opdatering af Elo');
-  }
-});
-
-
 const PORT = 3000;
 
-app.listen(PORT, () => {
-  console.log(`Server kører på http://localhost:${PORT}`);
+app.use(express.json());
+app.use(express.static(path.join(__dirname, '../frontend')));
+
+// ROUTE 1: Hent alle unikke genrer
+app.get('/api/genres', async function (req, res) {
+    try {
+        const result = await pool.query(
+            "SELECT DISTINCT genre FROM tracks WHERE genre IS NOT NULL ORDER BY genre"
+        );
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: "Kunne ikke hente genrer" });
+    }
+});
+
+// ROUTE 2: Hent to sange til pairwise sammenligning
+app.get('/api/pair', async function (req, res) {
+    try {
+        const genre = req.query.genre;
+        if (!genre) return res.status(400).json({ error: "Genre mangler" });
+
+        const songs = await getTwoPairwiseSongs(genre);
+        res.json(songs);
+    } catch (err) {
+        res.status(500).json({ error: "Fejl ved hentning af par" });
+    }
+});
+
+// ROUTE 3: Modtag stemme og opdater Elo ratings
+app.post('/api/vote', async function (req, res) {
+    try {
+        const { winner_id, loser_id, winner_elo, loser_elo } = req.body;
+
+        const newWinnerRating = updateElo(winner_elo, loser_elo, 1);
+        const newLoserRating = updateElo(loser_elo, winner_elo, 0);
+
+        await saveEloToDatabase(winner_id, newWinnerRating);
+        await saveEloToDatabase(loser_id, newLoserRating);
+
+        res.json({ success: true, newWinnerRating, newLoserRating });
+    } catch (err) {
+        res.status(500).json({ error: "Kunne ikke gemme stemme" });
+    }
+});
+
+// ROUTE 4: Hent næste track
+app.get('/api/next-track', async function (req, res) {
+    try {
+        const track = await getNextTrack();
+        res.json(track);
+    } catch (err) {
+        res.status(500).json({ error: "Kunne ikke hente næste track" });
+    }
+});
+
+app.listen(PORT, function () {
+    console.log('Server kører på http://localhost:' + PORT);
 });
