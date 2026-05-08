@@ -24,11 +24,7 @@ async function createTables() {
         tempo         DECIMAL(6,3),
         elo_rating    INTEGER DEFAULT 1000,
         
-        /* OPGAVE: Tilføj to nye kolonner herunder:
-           1. win_count (skal være INTEGER og starte på 0)
-           2. play_count (skal være INTEGER og starte på 0)
-           Dette hjælper os med at se hvilke sange der faktisk bliver brugt!
-        */
+        
         
       )
     `)
