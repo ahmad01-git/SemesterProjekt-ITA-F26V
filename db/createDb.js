@@ -32,11 +32,8 @@ async function createTables() {
         
       )
     `)
-    
-    /* OPGAVE: Tilføj en SQL kommando herunder til at oprette et INDEX på 'genre'.
-       Det gør at når jeres brugere søger efter genre, så svarer databasen lynhurtigt.
-       Brug: CREATE INDEX IF NOT EXISTS idx_genre ON tracks(genre)
-    */
+
+
 
     console.log('Tabeller oprettet!')
   } catch (error) {
@@ -74,7 +71,7 @@ async function filterTopTracks() {
     console.error('Fejl i filterTopTracks:', err)
   }
 }
-
+// her importerer vi sange fra en csv fil til databasen
 async function importTracks() {
   const results = []
   console.log('Begynder at læse CSV filen...')

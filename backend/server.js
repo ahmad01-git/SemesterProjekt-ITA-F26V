@@ -16,6 +16,9 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 // ROUTE 1: Hent alle unikke genrer
+// her bruger vi pool.query til at hente alle unikke genrer fra databasen
+// og det fungere ved at det returnere en liste over alle unikke genrer i databasen
+// fun fact vi har 113 genrer i vores database
 app.get('/api/genres', async function (req, res) {
     try {
         const result = await pool.query(
@@ -28,6 +31,9 @@ app.get('/api/genres', async function (req, res) {
 });
 
 // ROUTE 2: Hent to sange til pairwise sammenligning
+// her bruger vi getTwoPairwiseSongs fra player.js til at hente to tilfældige sange fra en given genre
+// og det fungere ved at det finder de sang der har den given genre og vælger to tilfældige af dem
+
 app.get('/api/pair', async function (req, res) {
     try {
         const genre = req.query.genre;
@@ -41,6 +47,8 @@ app.get('/api/pair', async function (req, res) {
 });
 
 // ROUTE 3: Modtag stemme og opdater Elo ratings
+// her bruger vi updateElo fra player.js til at opdatere elo ratings for de to sange der blev stemt på
+// og det fungere ved at det tager elo rating for de to sange og opdaterer dem baseret på resultatet
 app.post('/api/vote', async function (req, res) {
     try {
         const { winner_id, loser_id, winner_elo, loser_elo } = req.body;
@@ -58,6 +66,8 @@ app.post('/api/vote', async function (req, res) {
 });
 
 // ROUTE 4: Hent næste track
+// her bruger vi getNextTrack fra player.js til at hente næste track fra databasen
+// det fungere ved at det finder det track der har den højeste elo rating
 app.get('/api/next-track', async function (req, res) {
     try {
         const track = await getNextTrack();
