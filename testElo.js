@@ -1,98 +1,104 @@
-// 1. Hent funktionen fra din player.js (Sørg for stien er rigtig!)
-
-// du kan se listen over de forskellige ting med at blandt andet skrive node backend/server.js og efter hvis du ville se genre: http://localhost:3000/api/genres
-// med genre så sad jeg også selv meget fast og det var endelig fordi jeg skrev dem med store bogstaver i stedet for små
-//http://localhost:3000/api/pair?genre=pop
-//http://localhost:3000/api/vote?winner_id=1&loser_id=2&winner_elo=1000&loser_elo=1000
-//http://localhost:3000/api/next-track
-
-// 1. Importer de nødvendige funktioner og database-pool
-// Vi henter pool fra din db eller player fil for at kunne teste forbindelsen
-const { pool, updateElo, getTwoPairwiseSongs } = require('./backend/player.js');
+const {
+    pool,
+    updateElo,
+    getTwoPairwiseSongs,
+    getBillboard,
+    getOnboardingSongs,
+    saveUserMixtape,
+    getUserMixtape,
+    mergeMixtapes
+} = require('./backend/player.js');
 
 async function runTests() {
-    console.log("=== 🚀 START AF SYSTEM-TEST ===\n");
+    console.log("=== 🏆 DEN ULTIMATIVE SYSTEM-TEST ===\n");
 
-    // --- TEST 1: Elo-Matematik (Logik-tjek) ---
-    console.log("--- TEST 1: Elo Matematik ---");
-    let ratingA = 1200;
-    let ratingB = 1200;
+    // --- TEST 1: Avanceret Elo-Matematik ---
+    console.log("--- TEST 1: Elo Scenarier ---");
+    const scenarios = [
+        { a: 1000, b: 1000, win: 1, desc: "Lige kamp (begge begyndere)" },
+        { a: 2000, b: 2000, win: 1, desc: "To mestre i duel" },
+        { a: 1800, b: 1000, win: 0, desc: "Kæmpe overraskelse (Underdog vinder)" },
+        { a: 1800, b: 1000, win: 1, desc: "Favorit vinder som forventet" }
+    ];
 
-    // Scenarie: Lige kamp
-    let nyA = updateElo(ratingA, ratingB, 1); // A vinder
-    let nyB = updateElo(ratingB, ratingA, 0); // B taber
-
-    console.log(`Lige kamp (1200 vs 1200):`);
-    console.log(`   Vinder: 1200 -> ${nyA} (+${nyA - 1200})`);
-    console.log(`   Taber:  1200 -> ${nyB} (${nyB - 1200})\n`);
-
-    // Scenarie: Underdog vinder over favorit
-    ratingA = 1600; // Favorit
-    ratingB = 1000; // Underdog
-    nyA = updateElo(ratingA, ratingB, 0); // Favorit taber
-    nyB = updateElo(ratingB, ratingA, 1); // Underdog vinder
-
-    console.log(`Stor forskel (Favorit 1600 vs Underdog 1000):`);
-    console.log(`   Underdog vinder: 1000 -> ${nyB} (+${nyB - 1000}) - Bør stige meget!`);
-    console.log(`   Favorit taber:   1600 -> ${nyA} (${nyA - 1600}) - Bør falde meget!\n`);
+    scenarios.forEach(s => {
+        const nyA = updateElo(s.a, s.b, s.win);
+        const diff = nyA - s.a;
+        console.log(`[${s.desc}]: ${s.a} -> ${nyA} (${diff > 0 ? '+' : ''}${diff})`);
+    });
 
 
-    // --- TEST 2: Database Forbindelse ---
-    console.log("--- TEST 2: Database Forbindelse ---");
-    try {
-        const res = await pool.query('SELECT NOW()');
-        console.log("✅ Database forbindelse virker! Tid fra DB:", res.rows[0].now);
+    // --- TEST 2: Onboarding (Forskellige antal genrer) ---
+    console.log("\n--- TEST 2: Onboarding Logik (Mængde-tjek) ---");
+    const testCases = [
+        { g: ['pop'], desc: "1 genre (7 top + 3 random)" },
+        { g: ['pop', 'rock'], desc: "2 genrer (4+1 pr. genre)" },
+        { g: ['pop', 'rock', 'jazz'], desc: "3 genrer (3+1 pr. genre)" }
+    ];
 
-        const countRes = await pool.query('SELECT COUNT(*) FROM tracks');
-        console.log(`✅ Antal sange i 'tracks' tabellen: ${countRes.rows[0].count}\n`);
-    } catch (err) {
-        console.log("❌ Database fejl:", err.message);
+    for (const t of testCases) {
+        try {
+            const songs = await getOnboardingSongs(t.g, 10);
+            console.log(`✅ ${t.desc}: Fandt ${songs.length} sange.`);
+            // Vis de første par sange for at bekræfte blandingen
+            const titler = songs.slice(0, 3).map(s => s.title).join(", ");
+            console.log(`   Eksempel: ${titler}...`);
+        } catch (e) {
+            console.log(`❌ Fejl i ${t.desc}: ${e.message}`);
+        }
     }
 
 
-    // --- TEST 3: Pairwise Hentning (SQL-tjek) ---
-    console.log("--- TEST 3: Pairwise Hentning pr. Genre ---");
+    // --- TEST 3: User Mixtape & Database Tabeller ---
+    console.log("\n--- TEST 3: Database Mixtape (Gem/Hent) ---");
+    const testUser = "test_bruger_" + Math.floor(Math.random() * 1000);
     try {
-        // Vi finder først en tilfældig genre der rent faktisk findes i jeres data
-        const genreRes = await pool.query('SELECT genre FROM tracks WHERE genre IS NOT NULL LIMIT 1');
+        // Vi henter 3 tilfældige sange fra DB for at få nogle ID'er
+        const someSongs = await pool.query("SELECT id FROM tracks LIMIT 3");
+        const trackIds = someSongs.rows.map(r => r.id);
 
-        if (genreRes.rows.length > 0) {
-            const testGenre = genreRes.rows[0].genre;
-            console.log(`Prøver at hente par for genren: "${testGenre}"...`);
+        console.log(`Prøver at gemme ID'er [${trackIds}] til bruger: ${testUser}`);
+        await saveUserMixtape(testUser, trackIds);
 
-            const pair = await getTwoPairwiseSongs(testGenre);
-
-            if (pair && pair.length === 2) {
-                console.log(`✅ Succes! Hentet 2 sange:`);
-                console.log(`   1. ${pair[0].title} (${pair[0].elo_rating} Elo)`);
-                console.log(`   2. ${pair[1].title} (${pair[1].elo_rating} Elo)`);
-            } else {
-                console.log(`⚠️ Advarsel: Hentet ${pair ? pair.length : 0} sange. Tjek om genren har nok sange.`);
-            }
+        const mixtape = await getUserMixtape(testUser);
+        console.log(`✅ Succes! Hentet ${mixtape.length} sange tilbage for "${testUser}"`);
+    } catch (err) {
+        if (err.message.includes("user_mixtapes")) {
+            console.log("❌ FEJL: Tabellen 'user_mixtapes' mangler i din database!");
+            console.log("   LØSNING: Kør 'CREATE TABLE' kommandoen i din Neon Console.");
         } else {
-            console.log("⚠️ Kunne ikke finde nogen genrer i databasen.");
+            console.log("❌ Fejl:", err.message);
+        }
+    }
+
+
+    // --- TEST 4: Social Merge (X-Faktor) ---
+    console.log("\n--- TEST 4: Social Merge ---");
+    try {
+        const merged = await mergeMixtapes(testUser, testUser); // Vi merger med os selv for at tvinge matches
+        console.log(`✅ Merge test ok. Fællesliste størrelse: ${merged.length}`);
+        if (merged.length > 0) {
+            console.log(`   Top match: ${merged[0].title}`);
         }
     } catch (err) {
-        console.log("❌ Fejl ved hentning af sange:", err.message);
+        console.log("❌ Fejl i Merge:", err.message);
     }
 
 
-    // --- TEST 4: Billboard Tjek ---
-    console.log("\n--- TEST 4: Billboard Topliste ---");
+    // --- TEST 5: Global Billboard ---
+    console.log("\n--- TEST 5: Global Billboard Top 5 ---");
     try {
-        const result = await pool.query('SELECT title, elo_rating FROM tracks ORDER BY elo_rating DESC LIMIT 3');
-        console.log("Top 3 sange lige nu:");
-        result.rows.forEach((song, i) => {
-            console.log(`   ${i + 1}. ${song.title} (${song.elo_rating} Elo)`);
+        const top = await getBillboard();
+        top.slice(0, 5).forEach((s, i) => {
+            console.log(`   ${i + 1}. ${s.title} (${s.elo_rating} Elo)`);
         });
-        console.log("✅ Billboard query virker.");
+        console.log("✅ Billboard leveret.");
     } catch (err) {
-        console.log("❌ Fejl ved Billboard test:", err.message);
+        console.log("❌ Fejl i Billboard:", err.message);
     }
 
-    console.log("\n=== 🏁 TEST GENNEMFØRT ===");
+    console.log("\n=== 🏁 ALLE TEST FÆRDIGE ===");
     process.exit();
 }
 
-// Kør hele baduljen
 runTests();

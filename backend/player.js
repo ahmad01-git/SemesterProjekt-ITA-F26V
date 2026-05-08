@@ -1,4 +1,4 @@
-const pool = require('../db/connect');
+const { pool } = require('../db/connect.js');
 
 const K = 32;
 // her bruger vi elo rating systemet til at beregne den nye elo rating for to sange
@@ -194,6 +194,7 @@ async function mergeMixtapes(usernameA, usernameB) {
 }
 
 module.exports = {
+    pool,
     updateElo,
     getTwoPairwiseSongs,
     saveEloToDatabase,
