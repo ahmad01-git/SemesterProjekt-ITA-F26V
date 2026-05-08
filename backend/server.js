@@ -6,7 +6,13 @@ const {
     updateElo,
     getTwoPairwiseSongs,
     saveEloToDatabase,
-    getNextTrack
+    getNextTrack,
+    getOnboardingSongs,
+    saveUserMixtape,
+    getUserMixtape,
+    resetUser,
+    getBillboard,
+    mergeMixtapes
 } = require('./player');
 
 const app = express();
@@ -77,6 +83,90 @@ app.get('/api/next-track', async function (req, res) {
     }
 });
 
+// ROUTE 5: Hent onboarding sange
+// her bruger vi getOnboardingSongs fra player.js til at hente onboarding sange
+// det fungere ved at det finder de sang der har den given genre og vælger to tilfældige af dem
+// og gemmer dem i databasen ved at bruge saveUserMixtape
+
+app.get('/api/onboarding', async function (req, res) {
+    try {
+        const genres = req.query.genres ? req.query.genres.split(',') : [];
+        const total = parseInt(req.query.total) || 10;
+
+        const songs = await getOnboardingSongs(genres, total);
+        res.json(songs);
+    } catch (err) {
+        res.status(500).json({ error: "Fejl ved hentning af onboarding sange" });
+    }
+});
+
+// ROUTE 6: Gem mixtape (POST)
+// her bruger vi saveUserMixtape fra player.js til at gemme mixtape
+// det fungere ved at det tager en brugernavn og en liste over track id'er og gemmer dem i databasen
+app.post('/api/mixtape', async function (req, res) {
+    try {
+        const { username, trackIds } = req.body;
+        await saveUserMixtape(username, trackIds);
+        res.json({ success: true, message: "Mixtape gemt!" });
+    } catch (err) {
+        res.status(500).json({ error: "Kunne ikke gemme mixtape" });
+    }
+});
+
+// ROUTE 7: Hent mixtape (GET)
+// her bruger vi getUserMixtape fra player.js til at hente mixtape
+// det fungere ved at det tager en brugernavn og returnere en liste over track id'er der er gemt i databasen
+app.get('/api/mixtape', async function (req, res) {
+    try {
+        const username = req.query.username;
+        const mixtape = await getUserMixtape(username);
+        res.json(mixtape);
+    } catch (err) {
+        res.status(500).json({ error: "Kunne ikke hente mixtape" });
+    }
+});
+
+// ROUTE 8: Nulstil bruger (DELETE)
+// her bruger vi resetUser fra player.js til at nulstille en brugers mixtape og elo ratings
+// det fungere ved at det tager en brugernavn og fjerner alle sange fra brugerens mixtape og elo ratings
+app.delete('/api/reset', async function (req, res) {
+    try {
+        const username = req.query.username;
+        await resetUser(username);
+        res.json({ success: true, message: "Bruger nulstillet" });
+    } catch (err) {
+        res.status(500).json({ error: "Kunne ikke resette bruger" });
+    }
+});
+
+// ROUTE 9: Hent billboard (GET)
+// her bruger vi getBillboard fra player.js til at hente billboard
+// det fungere ved at det tager en genre og en artist og returnere en liste over de sang der har den given genre og artist
+app.get('/api/billboard', async function (req, res) {
+    try {
+        const { genre, artist } = req.query;
+        const billboard = await getBillboard(genre, artist);
+        res.json(billboard);
+    } catch (err) {
+        res.status(500).json({ error: "Fejl ved hentning af Billboard" });
+    }
+});
+
+// ROUTE 10: Flet mixtapes (GET)
+// her bruger vi mergeMixtapes fra player.js til at flette to brugeres mixtapes
+// det fungere ved at det tager en brugernavn og en liste over track id'er og returnere en liste over track id'er der er i begge brugeres mixtapes
+app.get('/api/merge', async function (req, res) {
+    try {
+        const { userA, userB } = req.query;
+        const mergedList = await mergeMixtapes(userA, userB);
+        res.json(mergedList);
+    } catch (err) {
+        res.status(500).json({ error: "Kunne ikke flette mixtapes" });
+    }
+});
+
+// ROUTE 11: Start serveren (Express.js)
+// her starter vi serveren og viser en besked i terminalen om at serveren kører
 app.listen(PORT, function () {
     console.log('Server kører på http://localhost:' + PORT);
 });

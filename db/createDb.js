@@ -6,9 +6,11 @@ const path = require('path')
 
 async function createTables() {
   try {
-    // Vi sletter tabellen først så vi starter helt forfra hver gang
-    await pool.query('DROP TABLE IF EXISTS tracks')
-
+    // Vi sletter tabellerne først så vi starter helt forfra hver gang
+    await pool.query('DROP TABLE IF EXISTS tracks CASCADE')
+    await pool.query('DROP TABLE IF EXISTS user_mixtapes CASCADE')
+    await pool.query('DROP TABLE IF EXISTS user_elo CASCADE')
+    //bruger tracks er en tabel der viser sange der er tilføjet til en brugers mixtape,
     await pool.query(`
       CREATE TABLE IF NOT EXISTS tracks (
         id            SERIAL PRIMARY KEY,
@@ -22,10 +24,25 @@ async function createTables() {
         energy        DECIMAL(4,3),
         valence       DECIMAL(4,3),
         tempo         DECIMAL(6,3),
-        elo_rating    INTEGER DEFAULT 1000,
-        
-        
-        
+        elo_rating    INTEGER DEFAULT 1000
+      )
+    `)
+    //bruger mixtapes som en tabel der viser sange der er tilføjet til en brugers mixtape,
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_mixtapes (
+        id          SERIAL PRIMARY KEY,
+        username    VARCHAR(100),
+        track_id    INTEGER REFERENCES tracks(id),
+        added_at    TIMESTAMP DEFAULT NOW()
+      )
+    `)
+    //bruger elo rating, er en tabel der viser sange med elo rating, den er god til at vise hvor mange der har stemt på en sang.
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_elo (
+        username    VARCHAR(100),
+        track_id    INTEGER REFERENCES tracks(id),
+        elo_score   INTEGER DEFAULT 1000,
+        PRIMARY KEY (username, track_id)
       )
     `)
 
@@ -56,7 +73,7 @@ async function filterTopTracks() {
                  ) AS rank
           FROM tracks
         ) AS ranked
-        WHERE rank <= 10
+        WHERE rank <= 100
       );
     `)
 
