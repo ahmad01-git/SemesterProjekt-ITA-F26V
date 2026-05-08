@@ -3,6 +3,13 @@ const songList = document.getElementById("songList");
 const nowPlaying = document.getElementById("nowPlaying");
 const queueList = document.getElementById("queueList");
 const nextBtn = document.getElementById("nextBtn");
+const clearQueueBtn = document.getElementById("clearQueueBtn");
+
+const playerSong = document.getElementById("playerSong");
+const playerBtn = document.getElementById("playerBtn");
+const backBtn = document.getElementById("backBtn");
+const forwardBtn = document.getElementById("forwardBtn");
+const progressBar = document.getElementById("progressBar");
 
 let queue = [];
 
@@ -54,6 +61,10 @@ function showSongs(songs) {
 
 // ▶ Afspil
 async function playSong(song) {
+  playerSong.innerText = `${song.title} - ${song.artist}`;
+  playerBtn.innerText = "⏸";
+  startProgressBar();
+
   nowPlaying.innerText = `${song.title} - ${song.artist}`;
 
   await fetch(`http://localhost:3000/api/play/${song.id}`, {
@@ -84,6 +95,12 @@ function showQueue() {
   });
 }
 
+// 🗑 Ryd kø
+function clearQueue() {
+  queue = [];
+  showQueue();
+}
+
 // ⏭ Næste sang
 function playNextSong() {
   if (queue.length === 0) {
@@ -99,6 +116,8 @@ function playNextSong() {
 
 nextBtn.addEventListener("click", playNextSong);
 
+clearQueueBtn.addEventListener("click", clearQueue);
+
 // 🔍 Søg
 searchInput.addEventListener("input", () => {
   const text = searchInput.value.toLowerCase();
@@ -113,6 +132,23 @@ searchInput.addEventListener("input", () => {
     }
   });
 });
+
+// ProgressBar
+function startProgressBar() {
+  progressBar.style.width = "0%";
+
+  let width = 0;
+
+  const interval = setInterval(() => {
+    width++;
+    progressBar.style.width = width + "%";
+
+    if (width >= 100) {
+      clearInterval(interval);
+      playerBtn.innerText = "▶";
+    }
+  }, 300);
+}
 
 // 🚀 Start
 getSongs();
