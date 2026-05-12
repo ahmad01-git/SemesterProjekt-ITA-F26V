@@ -22,7 +22,7 @@ async function getTwoPairwiseSongs(genre) {
 
 // her vælger vi de to sange der har den højeste elo rating ved at sortere dem efter elo rating
 // og returnere de to første sange
-async function topGetTwoPairwiseSongs() {
+async function topGetTwoTopPairwiseSongs() {
     const result = await pool.query(
         "SELECT * FROM tracks ORDER BY elo_rating DESC LIMIT 2"
     );
@@ -71,6 +71,7 @@ async function getOnboardingSongs(genres, totalSongs) {
 
     let topPerGenre = 0;
     let randomPerGenre = 0;
+    let randomRandomPerGenre = 0;
 
     if (nGenre === 0) {
         console.log("Ingen genrer valgt");
@@ -78,9 +79,10 @@ async function getOnboardingSongs(genres, totalSongs) {
     } else if (nGenre === 1) {
         topPerGenre = 7;
         randomPerGenre = 3;
+
     } else if (nGenre === 2) {
         topPerGenre = 4;
-        randomPerGenre = 2;
+        randomPerGenre = 1;
     } else if (nGenre === 3) {
         topPerGenre = 3;
         randomPerGenre = 1;
@@ -197,6 +199,7 @@ module.exports = {
     pool,
     updateElo,
     getTwoPairwiseSongs,
+    topGetTwoTopPairwiseSongs,
     saveEloToDatabase,
     getNextTrack,
     getOnboardingSongs,
