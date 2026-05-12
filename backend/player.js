@@ -66,7 +66,7 @@ async function getOnboardingSongs(genres, totalSongs) {
     // tilføj dem til resultat-arrayet
     // returner alle sange
 
-    let alleSange = [];
+    /* let alleSange = [];
     const nGenre = genres.length;
 
     let topPerGenre = 0;
@@ -80,7 +80,7 @@ async function getOnboardingSongs(genres, totalSongs) {
         randomPerGenre = 3;
     } else if (nGenre === 2) {
         topPerGenre = 4;
-        randomPerGenre = 2;
+        randomPerGenre = 1;
     } else if (nGenre === 3) {
         topPerGenre = 3;
         randomPerGenre = 1;
@@ -103,6 +103,110 @@ async function getOnboardingSongs(genres, totalSongs) {
 
     return alleSange;
 }
+*/
+
+
+// Vi laver en tom liste som skal indeholde alle de sange brugeren får anbefalet
+let alleSange = [];
+
+// Her finder vi ud af hvor mange genrer brugeren har valgt
+const nGenre = genres.length;
+
+// Denne variabel bestemmer hvor mange top tracks vi tager fra hver genre
+let topPerGenre = 0;
+
+
+// Hvis brugeren ikke har valgt nogen genrer
+// stopper funktionen og returnerer en tom liste
+if (nGenre === 0) {
+
+    console.log("Ingen genrer valgt");
+    return alleSange;
+
+
+// Hvis brugeren kun vælger 1 genre
+// tager vi 7 top tracks fra den genre
+} else if (nGenre === 1) {
+
+    topPerGenre = 7;
+
+
+// Hvis brugeren vælger 2 genrer
+// tager vi 4 top tracks fra hver genre
+} else if (nGenre === 2) {
+
+    topPerGenre = 4;
+
+
+// Hvis brugeren vælger 3 genrer
+// tager vi 3 top tracks fra hver genre
+} else if (nGenre === 3) {
+
+    topPerGenre = 3;
+
+
+// Hvis brugeren vælger 4 genrer
+// tager vi 2 top tracks fra hver genre
+} else if (nGenre === 4) {
+
+    topPerGenre = 2;
+
+
+// Hvis brugeren vælger 5 genrer
+// tager vi også 2 top tracks fra hver genre
+} else if (nGenre === 5) {
+
+    topPerGenre = 2;
+}
+
+
+// Her henter vi top tracks fra hver genre
+// Vi går igennem alle valgte genrer én efter én
+for (const genre of genres) {
+
+    // Vi henter tracks fra databasen
+    // sorteret efter elo_rating fra højest til lavest
+    // og tager kun det antal vi har bestemt ovenfor
+    const result = await pool.query(`
+        SELECT *
+        FROM tracks
+        WHERE genre = $1
+        ORDER BY elo_rating DESC
+        LIMIT $2
+    `, [genre, topPerGenre]);
+
+    // Her tilføjer vi de fundne tracks til vores liste
+    alleSange.push(...result.rows);
+}
+
+
+// Hvis vi stadig ikke har 10 tracks endnu
+// fylder vi resten op med tilfældige tracks
+while (alleSange.length < 10) {
+
+    // Her vælger vi en tilfældig genre
+    const randomGenre =
+        genres[Math.floor(Math.random() * genres.length)];
+
+    // Her vælger vi en tilfældig sang fra den genre
+    const randomSong = await pool.query(`
+        SELECT *
+        FROM tracks
+        WHERE genre = $1
+        ORDER BY RANDOM()
+        LIMIT 1
+    `, [randomGenre]);
+
+    // Vi tilføjer den tilfældige sang til listen
+    alleSange.push(randomSong.rows[0]);
+}
+
+
+// Til sidst returnerer vi listen med alle sangene
+return alleSange;
+
+}
+
 
 
 
