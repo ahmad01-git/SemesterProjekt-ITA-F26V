@@ -12,13 +12,73 @@ function updateElo(rating1, rating2, actualScore) {
 }
 // her vælger vi to tilfældige sange fra en given genre ved at sortere dem tilfældigt
 // og returnere de to første sange der har den given genre
-async function getTwoPairwiseSongs(genre) {
-    const result = await pool.query(
-        "SELECT * FROM tracks WHERE genre = $1 ORDER BY RANDOM() LIMIT 2",
-        [genre]
-    );
+async function getTwoPairwiseSongs(genre, seen) {
+    let query = "SELECT * FROM tracks WHERE genre = $1";
+    let params = [genre];
+
+    if (seen && seen.length > 0) {
+        // Lav et array af placeholders: $2, $3, $4...
+        let placeholders = [];
+        for (let i = 0; i < seen.length; i++) {
+            placeholders.push("$" + (i + 2));
+            params.push(seen[i]);
+        }
+        query += " AND id NOT IN (" + placeholders.join(", ") + ")";
+    }
+
+    query += " ORDER BY RANDOM() LIMIT 2";
+
+    const result = await pool.query(query, params);
     return result.rows;
 }
+
+// Hent næste track fra brugerens mixtape baseret på position
+// username: hvem er det
+// currentIndex: hvilken sang er vi nået til (0, 1, 2...)
+
+async function getNextTrackFromMixtape(username, nummerIndex) {
+
+
+    const result = await pool.query(
+        "SELECT tracks.* FROM user_mixtapes " +
+        "JOIN tracks ON tracks.id = user_mixtapes.track_id " +
+        "WHERE user_mixtapes.username = $1 " +
+        "ORDER BY tracks.elo_rating DESC " +
+        "LIMIT 1 OFFSET $2",
+        [username, nummerIndex]
+    );
+
+    if (result.rows.length > 0) {
+        return result.rows[0];
+    } else {
+        return null; // Ingen flere sange på listen
+    }
+}
+
+// Hent næste track fra brugerens merge mixtape baseret på position
+// username: hvem er det
+// nummerIndex: hvilken sang er vi nået til (0, 1, 2...)
+
+async function getNextTrackFromMergeMixtape(username, nummerIndex) {
+
+
+    const result = await pool.query(
+        "SELECT tracks.* FROM merge_mixtape " +
+        "JOIN tracks ON tracks.id = merge_mixtape.track_id " +
+        "WHERE merge_mixtape.username = $1 " +
+        "ORDER BY merge_mixtape.avgRank ASC " +
+        "LIMIT 1 OFFSET $2",
+        [username, nummerIndex]
+    );
+
+    if (result.rows.length > 0) {
+        return result.rows[0];
+    } else {
+        return null; // Ingen flere sange på listen
+    }
+}
+
+
 
 // her vælger vi de to sange der har den højeste elo rating ved at sortere dem efter elo rating
 // og returnere de to første sange
@@ -54,59 +114,110 @@ async function getTop10Tracks() {
     return result.rows;
 }
 
-
-// here bruger vi getOnboardingSongs til at hente onboarding sange
-// den fungere ved at den tager en liste over genrer og en liste over sange
-// og returnere en liste over de sang der er i begge lister
-async function getOnboardingSongs(genres, totalSongs) {
-    // beregn topPerGenre og randomPerGenre ud fra genres.length
-    // loop igennem genres
-    // hent topPerGenre sange med høj elo fra den genre
-    // hent randomPerGenre sange tilfældigt fra den genre
-    // tilføj dem til resultat-arrayet
-    // returner alle sange
-
+async function getOnboardingSongs(genres) {
+    // Vi laver en tom liste som skal indeholde alle de sange brugeren får anbefalet
     let alleSange = [];
+
+    // Her finder vi ud af hvor mange genrer brugeren har valgt
     const nGenre = genres.length;
 
+    // Denne variabel bestemmer hvor mange top tracks vi tager fra hver genre
     let topPerGenre = 0;
-    let randomPerGenre = 0;
-    let randomRandomPerGenre = 0;
 
+
+    // Hvis brugeren ikke har valgt nogen genrer
+    // stopper funktionen og returnerer en tom liste
     if (nGenre === 0) {
+
         console.log("Ingen genrer valgt");
         return alleSange;
+
+
+        // Hvis brugeren kun vælger 1 genre
+        // tager vi 7 top tracks fra den genre
     } else if (nGenre === 1) {
+
         topPerGenre = 7;
-        randomPerGenre = 3;
 
+
+        // Hvis brugeren vælger 2 genrer
+        // tager vi 4 top tracks fra hver genre
     } else if (nGenre === 2) {
+
         topPerGenre = 4;
-        randomPerGenre = 1;
+
+
+        // Hvis brugeren vælger 3 genrer
+        // tager vi 3 top tracks fra hver genre
     } else if (nGenre === 3) {
+
         topPerGenre = 3;
-        randomPerGenre = 1;
+
+
+        // Hvis brugeren vælger 4 genrer
+        // tager vi 2 top tracks fra hver genre
+    } else if (nGenre === 4) {
+
+        topPerGenre = 2;
+
+
+        // Hvis brugeren vælger 5 genrer
+        // tager vi også 2 top tracks fra hver genre
+    } else if (nGenre === 5) {
+
+        topPerGenre = 2;
     }
 
-    for (let i = 0; i < genres.length; i++) {
-        const topResult = await pool.query(
-            "SELECT * FROM tracks WHERE genre = $1 ORDER BY elo_rating DESC LIMIT $2",
-            [genres[i], topPerGenre]
-        );
 
-        const randomResult = await pool.query(
-            "SELECT * FROM tracks WHERE genre = $1 AND elo_rating > 1100 ORDER BY RANDOM() LIMIT $2",
-            [genres[i], randomPerGenre]
-        );
+    // Her henter vi top tracks fra hver genre
+    // Vi går igennem alle valgte genrer én efter én
+    for (const genre of genres) {
 
-        alleSange.push(...topResult.rows);
-        alleSange.push(...randomResult.rows);
+        // Vi henter tracks fra databasen
+        // sorteret efter elo_rating fra højest til lavest
+        // og tager kun det antal vi har bestemt ovenfor
+        const result = await pool.query(`
+            SELECT *
+            FROM tracks
+            WHERE genre = $1
+            ORDER BY elo_rating DESC
+            LIMIT $2
+        `, [genre, topPerGenre]);
+
+        // Her tilføjer vi de fundne tracks til vores liste
+        alleSange.push(...result.rows);
     }
 
+
+    // Hvis vi stadig ikke har 10 tracks endnu
+    // fylder vi resten op med tilfældige tracks
+    while (alleSange.length < 10) {
+        const randomGenre = genres[Math.floor(Math.random() * genres.length)];
+        const randomSong = await pool.query(
+            "SELECT * FROM tracks WHERE genre = $1 ORDER BY RANDOM() LIMIT 1",
+            [randomGenre]
+        );
+
+        if (randomSong.rows.length > 0) {
+            const sang = randomSong.rows[0];
+
+            // Tjek om sangen allerede er i listen
+            const erDublet = alleSange.some(function (s) {
+                return s.id === sang.id
+            });
+
+
+            if (!erDublet) {
+                alleSange.push(sang);
+            }
+        }
+    }
+
+
+    // Til sidst returnerer vi listen med alle sangene
     return alleSange;
+
 }
-
-
 
 //her bruger vi saveUserMixtape til at gemme en brugers mixtape
 //den fungere ved at den tager et brugernavn og en liste over track id'er og gemmer dem i databasen
@@ -171,29 +282,62 @@ async function getBillboard(genre, artist) {
 //her bruger vi mergeMixtapes til at flette to brugeres mixtapes og returnere en liste over de sange der er i begge brugeres mixtapes
 //også viser de top 10 sange der er i begge brugeres mixtapes og gemmer dem i databasen ved at bruge saveUserMixtape
 async function mergeMixtapes(usernameA, usernameB) {
-    // hent liste A og liste B
-    // find dubletter (samme track_id på begge lister)
-    // dubletter går øverst
-    // resten sorteres efter elo
-    // returner samlet liste
     const listA = await getUserMixtape(usernameA);
     const listB = await getUserMixtape(usernameB);
 
-    // Find sange der er i begge lister (Perfect Match)
-    const matches = listA.filter(songA => listB.some(songB => songB.id === songA.id));
+    // --- FASE 1: Find dubletter og beregn gennemsnit ---
+    const matches = [];
 
-    // Find sange der kun er i den ene eller den anden
-    const uniqueA = listA.filter(songA => !matches.some(m => m.id === songA.id));
-    const uniqueB = listB.filter(songB => !matches.some(m => m.id === songB.id));
+    listA.forEach(function (songA, indexA) {
+        // Vi leder efter songA i listB
+        const indexB = listB.findIndex(function (songB) {
+            return songB.id === songA.id;
+        });
 
-    // Saml alle de unikke og sorter dem efter elo_rating
-    const combinedUnique = [...uniqueA, ...uniqueB].sort(function (a, b) {
+        if (indexB !== -1) {
+            // Vi har et match! Beregn gennemsnitlig position
+            const gennemsnit = (indexA + indexB) / 2;
+
+            // Tilføj gennemsnittet til sang-objektet
+            songA.avgRank = gennemsnit;
+            matches.push(songA);
+        }
+    });
+
+    // Sorter matches så det laveste gennemsnit (bedste placering) kommer først
+    matches.sort(function (a, b) {
+        return a.avgRank - b.avgRank;
+    });
+
+    // --- FASE 2: Find unikke sange ---
+    // Vi tager sange fra A, som ikke er i matches
+    const uniqueA = listA.filter(function (songA) {
+        const erMatch = matches.some(function (m) {
+            return m.id === songA.id;
+        });
+        return !erMatch;
+    });
+
+    // Vi tager sange fra B, som ikke er i matches
+    const uniqueB = listB.filter(function (songB) {
+        const erMatch = matches.some(function (m) {
+            return m.id === songB.id;
+        });
+        return !erMatch;
+    });
+
+    // --- FASE 3: Saml det hele ---
+    const alleUnikke = uniqueA.concat(uniqueB);
+
+    // Sorter de unikke sange efter deres globale Elo
+    alleUnikke.sort(function (a, b) {
         return b.elo_rating - a.elo_rating;
     });
 
-    // Returner matches først, derefter resten
-    return [...matches, ...combinedUnique];
+    // Returner matches først (vores fælles smag) og derefter resten
+    return matches.concat(alleUnikke);
 }
+
 
 module.exports = {
     pool,
@@ -207,5 +351,7 @@ module.exports = {
     getUserMixtape,
     resetUser,
     getBillboard,
-    mergeMixtapes
+    mergeMixtapes,
+    getNextTrackFromMixtape,
+    getNextTrackFromMergeMixtape
 }

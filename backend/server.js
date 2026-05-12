@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-const pool = require('../db/connect');
+const { pool } = require('../db/connect');
 
 const {
     updateElo,
@@ -12,7 +12,9 @@ const {
     getUserMixtape,
     resetUser,
     getBillboard,
-    mergeMixtapes
+    mergeMixtapes,
+    getNextTrackFromMixtape,
+    getNextTrackFromMergeMixtape
 } = require('./player');
 
 const app = express();
@@ -45,7 +47,9 @@ app.get('/api/pair', async function (req, res) {
         const genre = req.query.genre;
         if (!genre) return res.status(400).json({ error: "Genre mangler" });
 
-        const songs = await getTwoPairwiseSongs(genre);
+        const seen = req.query.seen ? req.query.seen.split(',').map(Number) : [];
+
+        const songs = await getTwoPairwiseSongs(genre, seen);
         res.json(songs);
     } catch (err) {
         res.status(500).json({ error: "Fejl ved hentning af par" });
