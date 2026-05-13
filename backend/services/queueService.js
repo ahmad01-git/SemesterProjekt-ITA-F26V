@@ -1,8 +1,10 @@
 const { pool } = require('../../db/connect');
 
-// Hent næste track fra brugerens mixtape baseret på position
-async function getNextTrackFromMixtape(username, nummerIndex) {
-    const result = await pool.query(
+// Hent næste sang fra brugerens mixtape baseret på position
+// username: hvem er det
+// nummerIndex: hvilken sang er vi nået til (0, 1, 2...)
+async function hentNæsteSangFraMixtape(username, nummerIndex) {
+    const resultat = await pool.query(
         "SELECT tracks.* FROM user_mixtapes " +
         "JOIN tracks ON tracks.id = user_mixtapes.track_id " +
         "WHERE user_mixtapes.username = $1 " +
@@ -11,17 +13,18 @@ async function getNextTrackFromMixtape(username, nummerIndex) {
         [username, nummerIndex]
     );
 
-    if (result.rows.length > 0) {
-        return result.rows[0];
+    if (resultat.rows.length > 0) {
+        return resultat.rows[0];
     } else {
         return null; // Ingen flere sange på listen
     }
 }
 
-// Hent næste track fra brugerens merge mixtape baseret på position
-async function getNextTrackFromMergeMixtape(username, nummerIndex) {
-    // Bemærk: merge_mixtape tabellen skal eksistere i databasen hvis denne bruges
-    const result = await pool.query(
+// Hent næste sang fra brugerens flettede mixtape baseret på position
+// username: hvem er det
+// nummerIndex: hvilken sang er vi nået til (0, 1, 2...)
+async function hentNæsteSangFraFletning(username, nummerIndex) {
+    const resultat = await pool.query(
         "SELECT tracks.* FROM merge_mixtape " +
         "JOIN tracks ON tracks.id = merge_mixtape.track_id " +
         "WHERE merge_mixtape.username = $1 " +
@@ -30,24 +33,24 @@ async function getNextTrackFromMergeMixtape(username, nummerIndex) {
         [username, nummerIndex]
     );
 
-    if (result.rows.length > 0) {
-        return result.rows[0];
+    if (resultat.rows.length > 0) {
+        return resultat.rows[0];
     } else {
         return null; // Ingen flere sange på listen
     }
 }
 
-// her vælger vi det næste track ved at sortere alle sange i databasen efter elo rating
-// og returnere den sang der har den højeste elo rating
-async function getNextTrack() {
-    const result = await pool.query(
+// her vælger vi den sang der har den højeste elo rating i hele databasen
+// og returnerer den som den næste sang der skal spilles
+async function hentNæsteSang() {
+    const resultat = await pool.query(
         "SELECT * FROM tracks ORDER BY elo_rating DESC LIMIT 1"
     );
-    return result.rows[0];
+    return resultat.rows[0];
 }
 
 module.exports = {
-    getNextTrackFromMixtape,
-    getNextTrackFromMergeMixtape,
-    getNextTrack
+    hentNæsteSangFraMixtape,
+    hentNæsteSangFraFletning,
+    hentNæsteSang
 };
