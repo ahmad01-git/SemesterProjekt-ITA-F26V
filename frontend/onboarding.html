@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="da">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Next-Track · Kom i gang</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { primary: '#bb0023' },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-zinc-950 text-white font-sans min-h-screen flex flex-col items-center justify-center px-8 pb-40">
+
+    <!-- TRIN 1 -->
+
+    <div class="mb-8">
+        <label class="text-sm font-medium text-zinc-400 mb-3 block">Vælg op til 3 genrer</label>
+        <div class="grid grid-cols-2 gap-3 mb-6">
+            <button data-genre="pop" data-farve="bg-pink-500" onclick="toggleGenre(this)" class="genre-knap border border-white/10 bg-white/5 rounded-xl px-4 py-4
+                               text-sm font-medium hover:border-white/20 transition-colors text-left text-white">
+                Pop
+            </button>
+            <button data-genre="rock" data-farve="bg-red-500" onclick="toggleGenre(this)" class="genre-knap border border-white/10 bg-white/5 rounded-xl px-4 py-4
+                               text-sm font-medium hover:border-white/20 transition-colors text-left text-white">
+                Rock
+            </button>
+            <button data-genre="hip-hop" data-farve="bg-green-500" onclick="toggleGenre(this)" class="genre-knap border border-white/10 bg-white/5 rounded-xl px-4 py-4
+                               text-sm font-medium hover:border-white/20 transition-colors text-left text-white">
+                Hip-Hop
+            </button>
+            <button data-genre="jazz" data-farve="bg-amber-500" onclick="toggleGenre(this)" class="genre-knap border border-white/10 bg-white/5 rounded-xl px-4 py-4
+                               text-sm font-medium hover:border-white/20 transition-colors text-left text-white">
+                Jazz
+            </button>
+            <button data-genre="disco" data-farve="bg-purple-500" onclick="toggleGenre(this)"
+                class="genre-knap border border-white/10 bg-white/5 rounded-xl px-4 py-4
+                               text-sm font-medium hover:border-white/20 transition-colors text-left text-white col-span-2">
+                Disco
+            </button>
+        </div>
+        <button onclick="udfuldOnboarding()"
+            class="w-full bg-red-500 hover:bg-red-600 transition-colors rounded-xl py-3 text-sm font-semibold">
+            Næste →
+        </button>
+    </div>
+    </div>
+
+    <!-- TRIN 2 -->
+    <div id="trin-2" class="hidden w-full max-w-2xl">
+        <div class="mb-8 text-center">
+            <p class="text-zinc-500 text-sm mb-2">
+                Sammenligning <span id="runde-nummer">1</span> af <span id="total-runder">8</span>
+            </p>
+            <div class="h-1 bg-white/10 rounded-full w-full max-w-xs mx-auto">
+                <div id="voting-progress" class="h-full bg-red-500 rounded-full transition-all" style="width: 0%"></div>
+            </div>
+        </div>
+        <p class="text-center text-zinc-400 text-sm mb-6">Hvilken sang passer bedst lige nu?</p>
+        <div class="flex gap-4 mb-6">
+            <div id="sang-a" onclick="stemPå(0)" class="flex-1 rounded-2xl p-6 cursor-pointer border border-white/10 bg-white/5
+                        hover:bg-white/10 hover:border-white/20 transition-colors text-center">
+                <div id="sang-a-farve" class="w-16 h-16 rounded-xl mx-auto mb-4 bg-zinc-700"></div>
+                <p id="sang-a-titel" class="font-semibold text-sm truncate">—</p>
+                <p id="sang-a-artist" class="text-xs text-zinc-400 mt-1 truncate">—</p>
+                <p id="sang-a-elo-rating" class="text-xs text-zinc-400 mt-1 truncate">—</p>
+            </div>
+            <div class="flex items-center justify-center text-zinc-600 font-bold text-lg">vs</div>
+            <div id="sang-b" onclick="stemPå(1)" class="flex-1 rounded-2xl p-6 cursor-pointer border border-white/10 bg-white/5
+                        hover:bg-white/10 hover:border-white/20 transition-colors text-center">
+                <div id="sang-b-farve" class="w-16 h-16 rounded-xl mx-auto mb-4 bg-zinc-700"></div>
+                <p id="sang-b-titel" class="font-semibold text-sm truncate">—</p>
+                <p id="sang-b-artist" class="text-xs text-zinc-400 mt-1 truncate">—</p>
+                <p id="sang-b-elo-rating" class="text-xs text-zinc-400 mt-1 truncate">—</p>
+            </div>
+        </div>
+        <div class="text-center">
+            <button onclick="hopOver()" class="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+                Kender ikke sangene — skip
+            </button>
+        </div>
+    </div>
+
+    <!-- TRIN 3: Resultater -->
+    <div id="trin-3" class="hidden w-full max-w-2xl">
+        <div class="mb-8 text-center">
+            <span class="font-bold text-2xl">
+                <span class="text-white">Next-</span><span class="text-red-500">track</span>
+            </span>
+            <h2 class="text-xl font-bold mt-4 mb-1">Dit mixtape er klar! </h2>
+            <p class="text-zinc-400 text-sm">Her er de sange du stemte på</p>
+        </div>
+        <!-- Sanglisten udfyldes af JavaScript -->
+        <div id="resultat-liste" class="flex flex-col gap-2 mb-8"></div>
+        <button onclick="window.location.href='billboard.html?username=' + encodeURIComponent(username)"
+            class="w-full bg-red-500 hover:bg-red-600 transition-colors rounded-xl py-3 text-sm font-semibold">
+            Gå til Billboard →
+        </button>
+    </div>
+    <script src="components.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            indsætHeader()
+            indsætAfspiller()
+            opdaterAvatar()
+        })
+
+        // ─── STATE ───────────────────────────────────────
+        let valgteGenrer = []
+        let username = ''
+        let aktuelPar = []
+        let rundeNummer = 0
+        let onboardingSange = []  // Sange hentet fra API (bruges til at vise par)
+        let vinderIds = []        // IDs på de sange brugeren har stemt på (gemmes i mixtape)
+        let seenIds = []
+        const maxRunder = 8
+
+        // ─── TOGGLE GENRE ────────────────────────────────
+        function toggleGenre(knap) {
+            const genre = knap.dataset.genre
+            const aktivFarve = knap.dataset.farve
+            const index = valgteGenrer.indexOf(genre)
+
+            if (index !== -1) {
+                valgteGenrer.splice(index, 1)
+                knap.classList.remove(aktivFarve, 'border-white/40')
+                knap.classList.add('bg-white/5', 'border-white/10')
+            } else if (valgteGenrer.length < 3) {
+                valgteGenrer.push(genre)
+                knap.classList.remove('bg-white/5', 'border-white/10')
+                knap.classList.add(aktivFarve, 'border-white/40')
+            } else {
+                alert('Du kan højst vælge 3 genrer!')
+            }
+        }
+
+        // ─── UDFYLD ONBOARDING ───────────────────────────
+        async function udfuldOnboarding() {
+            username = document.getElementById('username-input').value.trim()
+
+            if (username === '') {
+                alert('Vi skal have dit navn')
+                return
+            }
+            if (valgteGenrer.length === 0) {
+                alert('Du skal vælge mindst én genre')
+                return
+            }
+
+            const genreParam = valgteGenrer.join(',')
+            const res = await fetch('/api/onboarding?genres=' + genreParam + '&total=10')
+            onboardingSange = await res.json()  // Gem sangene så vi kan vise dem som par
+
+            document.getElementById('total-runder').textContent = maxRunder
+            document.getElementById('trin-1').classList.add('hidden')
+            document.getElementById('trin-2').classList.remove('hidden')
+
+            await hentNæstePar()
+        }
+
+        // ─── HENT NÆSTE PAR ──────────────────────────────
+        async function hentNæstePar() {
+            const tilfældigIndex = Math.floor(Math.random() * valgteGenrer.length)
+            const valgtGenre = valgteGenrer[tilfældigIndex]
+            const seenStreng = seenIds.join(',')
+
+            let url = '/api/pair?genre=' + valgtGenre
+            if (seenIds.length > 0) url += '&seen=' + seenStreng
+
+            const res = await fetch(url)
+            const par = await res.json()
+
+            aktuelPar = par
+            seenIds.push(par[0].id, par[1].id)
+
+            document.getElementById('sang-a-titel').textContent = par[0].title
+            document.getElementById('sang-a-artist').textContent = par[0].artist
+            document.getElementById('sang-b-titel').textContent = par[1].title
+            document.getElementById('sang-b-artist').textContent = par[1].artist
+
+            const procent = (rundeNummer / maxRunder) * 100
+            document.getElementById('voting-progress').style.width = procent + '%'
+            document.getElementById('runde-nummer').textContent = rundeNummer + 1
+        }
+
+        // ─── STEM PÅ EN SANG ─────────────────────────────
+        async function stemPå(valg) {
+            const vinder = aktuelPar[valg]
+            const taber = aktuelPar[valg === 0 ? 1 : 0]
+
+            try {
+                await fetch('/api/vote', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        winner_id: vinder.id,
+                        loser_id: taber.id,
+                        winner_elo: vinder.elo_rating,
+                        loser_elo: taber.elo_rating
+                    })
+                })
+
+                vinderIds.push(vinder.id)  // Gem vinderens ID til mixtapet
+                rundeNummer++
+
+                if (rundeNummer >= maxRunder) {
+                    // Gem brugerens mixtape med de sange de har stemt på
+                    await fetch('/api/mixtape', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: username,
+                            trackIds: vinderIds
+                        })
+                    })
+
+                    // Hent det gemte mixtape og vis det i trin-3
+                    const mixtapeRes = await fetch('/api/mixtape?username=' + username)
+                    const gemteSange = await mixtapeRes.json()
+
+                    console.log('Mixtape gemt! Sange:', gemteSange)
+
+                    // Byg sangliste i trin-3
+                    const container = document.getElementById('resultat-liste')
+                    container.innerHTML = ''
+                    for (let i = 0; i < gemteSange.length; i++) {
+                        const sang = gemteSange[i]
+                        container.innerHTML += `
+                            <div class="flex items-center gap-4 px-4 py-3 rounded-xl border border-white/10 bg-white/5">
+                                <span class="text-zinc-500 w-5 text-sm">${i + 1}</span>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-white truncate">${sang.title}</p>
+                                    <p class="text-zinc-400 text-xs mt-0.5">${sang.artist}</p>
+                                </div>
+                                <span class="text-xs text-zinc-500">${sang.genre || ''}</span>
+                            </div>`
+                    }
+
+                    // Vis trin-3
+                    document.getElementById('trin-2').classList.add('hidden')
+                    document.getElementById('trin-3').classList.remove('hidden')
+                } else {
+                    await hentNæstePar()
+                }
+            } catch (error) {
+                console.error('Fejl ved stemmeafgivelse:', error)
+            }
+        }
+
+        // ─── SKIP ────────────────────────────────────────
+        function hopOver() {
+            hentNæstePar()
+        }
+    </script>
+
+</body>
+
+</html>
