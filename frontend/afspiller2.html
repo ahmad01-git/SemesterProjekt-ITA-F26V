@@ -5,8 +5,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Next-Track</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
     <script>
         tailwind.config = {
             theme: {
@@ -17,6 +21,7 @@
             }
         }
     </script>
+
     <style>
         .no-scrollbar::-webkit-scrollbar {
             display: none;
@@ -34,34 +39,41 @@
     <!-- ═══ HEADER ═══ -->
     <header
         class="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-zinc-950/80 px-8 py-4 backdrop-blur-xl">
+
         <div class="flex-1 flex justify-start">
             <span class="font-bold text-lg">
                 <span class="text-white">Next-</span><span class="text-red-500">track</span>
             </span>
         </div>
+
         <div class="flex-1 flex justify-center">
             <input type="text" id="søgefelt" placeholder="Søg..." class="w-64 rounded-full border border-white/10 bg-white/10 px-4 py-2 
-                    text-sm text-white placeholder-zinc-500 outline-none 
-                    focus:border-white/20 focus:w-72 transition-all" />
+                text-sm text-white placeholder-zinc-500 outline-none 
+                focus:border-white/20 focus:w-72 transition-all" />
         </div>
+
         <div class="flex-1 flex items-center justify-end gap-4">
             <nav class="flex gap-1">
                 <button onclick="skiftView('billboard')" class="nav-knap px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-400 
-                       hover:text-white hover:bg-white/10 transition-colors">
+                    hover:text-white hover:bg-white/10 transition-colors">
                     Billboard
                 </button>
+
                 <button onclick="skiftView('mixtape')" class="nav-knap px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-400 
-                       hover:text-white hover:bg-white/10 transition-colors">
-                    Mit mixtape
+                    hover:text-white hover:bg-white/10 transition-colors">
+                    Mit Mixtape
                 </button>
+
                 <button onclick="skiftView('merge')" class="nav-knap px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-400 
-                       hover:text-white hover:bg-white/10 transition-colors">
+                    hover:text-white hover:bg-white/10 transition-colors">
                     Gruppe Mix
                 </button>
             </nav>
+
             <div class="h-5 w-px bg-white/10"></div>
+
             <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center 
-                  rounded-full bg-red-500 font-semibold text-white text-sm">
+                rounded-full bg-red-500 font-semibold text-white text-sm">
                 C
             </div>
         </div>
@@ -75,8 +87,11 @@
             <div class="flex items-center justify-between mb-6">
                 <div>
                     <h1 class="text-3xl font-bold">Billboard</h1>
-                    <p class="text-sm text-zinc-500 mt-1">Top sange baseret på global Elo-rating</p>
+                    <p class="text-sm text-zinc-500 mt-1">
+                        Top sange baseret på global Elo-rating
+                    </p>
                 </div>
+
                 <!-- Genre filter -->
                 <select id="billboard-genre-filter"
                     class="bg-white/10 border border-white/10 rounded-lg px-3 py-1 text-sm text-white outline-none">
@@ -91,7 +106,7 @@
 
             <!-- Sangliste — udfyldes af JavaScript -->
             <div id="billboard-liste" class="flex flex-col gap-2">
-                <!-- Kortene bygges dynamisk af sangKort() funktionen. kig nede i script -->
+                <!-- Kortene bygges dynamisk af sangKort() funktionen -->
             </div>
         </div>
 
@@ -99,8 +114,11 @@
         <div id="view-mixtape" class="view hidden">
             <div class="mb-6">
                 <h1 class="text-3xl font-bold">Mit Mixtape</h1>
-                <p class="text-sm text-zinc-500 mt-1">Din personlige samling</p>
+                <p class="text-sm text-zinc-500 mt-1">
+                    Din personlige samling
+                </p>
             </div>
+
             <div id="mixtape-liste" class="flex flex-col gap-2">
                 <!-- Udfyldes af JavaScript -->
             </div>
@@ -110,23 +128,31 @@
         <div id="view-merge" class="view hidden">
             <div class="mb-6">
                 <h1 class="text-3xl font-bold">Gruppe Mix</h1>
-                <p class="text-sm text-zinc-500 mt-1">Slå to mixtapes sammen</p>
+                <p class="text-sm text-zinc-500 mt-1">
+                    Slå to mixtapes sammen
+                </p>
             </div>
+
             <!-- Input panel -->
             <div class="bg-white/5 border border-white/10 rounded-2xl p-6 max-w-md mb-8">
                 <div class="flex flex-col gap-3">
-                    <input type="text" id="merge-user-a" placeholder="Din bruger (fx casper)" class="bg-white/10 border border-white/10 rounded-lg px-4 py-2.5
+
+                    <input type="text" id="merge-user-a" placeholder="Din bruger (fx Casper)" class="bg-white/10 border border-white/10 rounded-lg px-4 py-2.5
                         text-sm text-white placeholder-zinc-500 outline-none
                         focus:border-red-500/50 transition-colors" />
-                    <input type="text" id="merge-user-b" placeholder="Anden bruger (fx ahmed)" class="bg-white/10 border border-white/10 rounded-lg px-4 py-2.5
+
+                    <input type="text" id="merge-user-b" placeholder="Anden bruger (fx Ahmad)" class="bg-white/10 border border-white/10 rounded-lg px-4 py-2.5
                         text-sm text-white placeholder-zinc-500 outline-none
                         focus:border-red-500/50 transition-colors" />
+
                     <button onclick="startMerge()" class="bg-red-500 hover:bg-red-600 transition-colors
-                         rounded-lg py-2.5 text-sm font-semibold">
+                        rounded-lg py-2.5 text-sm font-semibold">
                         Merge mixtapes
                     </button>
+
                 </div>
             </div>
+
             <div id="merge-liste" class="flex flex-col gap-2"></div>
         </div>
 
@@ -134,34 +160,56 @@
 
     <!-- ═══ AFSPILLER ═══ -->
     <div class="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-[1200px] 
-              bg-zinc-900/80 backdrop-blur-xl rounded-[2rem] px-5 py-4 md:px-12 
-              flex flex-col md:flex-row items-center justify-between 
-              border border-white/10 shadow-[0_40px_60px_rgba(0,0,0,0.5)] z-[100] gap-4 md:gap-0">
+        bg-zinc-900/80 backdrop-blur-xl rounded-[2rem] px-5 py-4 md:px-12 
+        flex flex-col md:flex-row items-center justify-between 
+        border border-white/10 shadow-[0_40px_60px_rgba(0,0,0,0.5)] z-[100] gap-4 md:gap-0">
+
         <div class="flex items-center gap-4 md:gap-8 w-full md:w-[30%]">
             <div class="w-16 h-16 md:w-14 md:h-14 rounded-[1.5rem] bg-red-500/20 border border-red-500/30 flex-shrink-0"
                 id="afspillerBillede"></div>
+
             <div class="truncate">
-                <h3 class="text-base font-semibold truncate text-white" id="afspillerTitel">Ingen sang spiller</h3>
-                <p class="text-sm text-zinc-400 truncate" id="afspillerKunstner">----</p>
+                <h3 class="text-base font-semibold truncate text-white" id="afspillerTitel">
+                    Ingen sang spiller
+                </h3>
+                <p class="text-sm text-zinc-400 truncate" id="afspillerKunstner">
+                    ----
+                </p>
             </div>
         </div>
+
         <div class="flex items-center gap-4 md:gap-8">
             <button
                 class="bg-white/10 backdrop-blur-sm text-zinc-300 rounded-full px-4 py-2 font-medium text-sm hover:scale-105 hover:text-white transition-transform"
-                id="forrigeKnap">Forrige</button>
+                id="forrigeKnap">
+                Forrige
+            </button>
+
             <button
                 class="w-12 h-12 rounded-full bg-white text-zinc-900 flex items-center justify-center text-lg hover:scale-105 transition-transform translate-x-px"
-                id="spilPauseKnap">▶</button>
+                id="spilPauseKnap">
+                ▶
+            </button>
+
             <button
                 class="bg-white/10 backdrop-blur-sm text-zinc-300 rounded-full px-4 py-2 font-medium text-sm hover:scale-105 hover:text-white transition-transform"
-                id="næsteKnap">Næste</button>
+                id="næsteKnap">
+                Næste
+            </button>
         </div>
+
         <div class="flex items-center gap-4 w-full md:w-[30%]">
-            <span class="text-xs text-zinc-400 w-10 text-right" id="nuværendeTid">0:00</span>
-            <div class="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">
+            <span class="text-xs text-zinc-400 w-10 text-right" id="nuværendeTid">
+                0:00
+            </span>
+
+            <div id="progressBar" class="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden cursor-pointer">
                 <div class="h-full w-0 bg-red-500 transition-all ease-linear" id="progressFill"></div>
             </div>
-            <span class="text-xs text-zinc-400 w-10" id="totalTid">0:00</span>
+
+            <span class="text-xs text-zinc-400 w-10" id="totalTid">
+                0:00
+            </span>
         </div>
     </div>
 
@@ -169,13 +217,20 @@
         // ─── GLOBAL SANGELISTE ──────────────────────────
         // Gemmer de sange der vises, så afspilSang() kan finde den rigtige sang
         let sangeListe = []
+        let alleSange = []
+        let mixtapeListe = []
+        let aktivSangIndex = null
+        let progressInterval = null
+        let spiller = false
+        let progressProcent = 0
 
         // ─── GENREFARVE ─────────────────────────────────
         // Returnerer en Tailwind baggrundsfarveklasse baseret på genre
         function getGenreFarve(genre) {
+
             if (!genre) return 'bg-zinc-500'
 
-            // De 5 kendte genrer får faste, unikke farver
+            // De 5 kendte genrer får faste farver
             const kendte = {
                 'rock': 'bg-red-500',
                 'pop': 'bg-pink-500',
@@ -185,144 +240,498 @@
             }
 
             const genreLower = genre.toLowerCase()
-            if (kendte[genreLower]) return kendte[genreLower]
 
-            // Ukendte genrer: vælg en konsistent farve baseret på genrenavnet
-            // Vi lægger bogstavernes tal (charCode) sammen og bruger resten (modulo) tilføj evt flere farver til array'et for at skabe flere farver
-            const ekstraFarver = ['bg-cyan-500', 'bg-orange-500', 'bg-teal-500', 'bg-indigo-500', 'bg-rose-400', 'bg-lime-500']
+            if (kendte[genreLower]) {
+                return kendte[genreLower]
+            }
+
+            // Ukendte genrer får en farve baseret på genrenavnet
+            const ekstraFarver = [
+                'bg-cyan-500',
+                'bg-orange-500',
+                'bg-teal-500',
+                'bg-indigo-500',
+                'bg-rose-400',
+                'bg-lime-500'
+            ]
+
             let sum = 0
+
             for (let i = 0; i < genre.length; i++) {
                 sum += genre.charCodeAt(i)
             }
+
             return ekstraFarver[sum % ekstraFarver.length]
         }
 
         // ─── VIEW NAVIGATION ────────────────────────────
+        // Skifter mellem Billboard, Mixtape og Gruppe Mix
         function skiftView(viewNavn) {
+
             document.querySelectorAll('.view').forEach(function (view) {
                 view.classList.add('hidden')
             })
-            document.getElementById('view-' + viewNavn).classList.remove('hidden')
+
+            document.getElementById('view-' + viewNavn)
+                .classList.remove('hidden')
         }
 
         // ─── SANGKORT ───────────────────────────────────
-        // Bygger HTML for ét sangkort og returnerer det som en tekststreng.
-        // onclick kalder afspilSang() med sangens index i den globale sangeListe.
-        function sangKort(sang, nummer) {
+        // Bygger HTML for ét sangkort og returnerer det som tekst
+        function sangKort(sang, nummer, rigtigIndex, visTilføj = true) {
+
             const min = Math.floor(sang.duration_ms / 60000)
+
             const sek = String(
                 Math.floor((sang.duration_ms % 60000) / 1000)
             ).padStart(2, '0')
 
             const farve = getGenreFarve(sang.genre)
-            const index = nummer - 1  // index 0-baseret, nummer 1-baseret
+
+            // Highlight aktiv sang
+            const aktivKlasse =
+                rigtigIndex === aktivSangIndex
+                    ? 'border-red-500 bg-red-500/10 shadow-lg shadow-red-500/10'
+                    : 'border-white/10 bg-white/5'
 
             return `
-        <div onclick="afspilSang(${index})" class="flex items-center gap-6 px-4 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
-            <span class="text-white text-center w-6 font-medium">
-                ${nummer}
-            </span>
-            <div class="w-12 h-12 rounded-xl ${farve} flex-shrink-0 opacity-80"></div>
-            <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium text-white truncate">
-                    ${sang.title}
-                </p>
-                <p class="text-zinc-400 text-xs mt-0.5">
-                    ${sang.artist}
-                </p>
-            </div>
-            <span class="text-xs font-mono ${farve} text-white px-2 py-0.5 rounded-full">
-                ${sang.elo_rating}
-            </span>
-            <span class="text-xs text-zinc-400">
-                ${min}:${sek}
-            </span>
-        </div>
-    `
+                <div onclick="afspilSang(${rigtigIndex})"
+                    class="flex items-center gap-6 px-4 py-3 rounded-xl border
+                    ${aktivKlasse}
+                    hover:bg-white/10 transition-all cursor-pointer">
+
+                    <span class="text-white text-center w-6 font-medium">
+                        ${nummer}
+                    </span>
+
+                    <div class="w-12 h-12 rounded-xl ${farve} flex-shrink-0 opacity-80"></div>
+
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-white truncate">
+                            ${sang.title}
+                        </p>
+
+                        <p class="text-zinc-400 text-xs mt-0.5">
+                            ${sang.artist}
+                        </p>
+                    </div>
+
+                    <span class="text-xs font-mono ${farve} text-white px-2 py-0.5 rounded-full">
+                        ${sang.elo_rating}
+                    </span>
+
+                    <span class="text-xs text-zinc-400">
+                        ${min}:${sek}
+                    </span>
+
+                    ${visTilføj ? `
+                        <button
+                            onclick="event.stopPropagation(); tilføjTilMixtape(${rigtigIndex})"
+                            class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-full">
+                            Tilføj
+                        </button>
+                    ` : ''}
+
+                </div>
+            `
         }
 
-        // ─── AFSPIL SANG ────────────────────────────────
-        // Kaldes når brugeren klikker på et sangkort.
-        // Opdaterer afspiller-baren i bunden med den valgte sangs info.
+        // ─── VIS SANGE ───────────────────────────────────
+        // Viser sange i Billboard-listen
+        function visSange(sange) {
+
+            const container =
+                document.getElementById('billboard-liste')
+
+            container.innerHTML = ''
+
+            sange.forEach(function (sang, index) {
+
+                const rigtigIndex =
+                    alleSange.indexOf(sang)
+
+                container.innerHTML += sangKort(
+                    sang,
+                    index + 1,
+                    rigtigIndex
+                )
+            })
+        }
+
+        // ─── AFSPILLER ──────────────────────────────────
+        // Kaldes når brugeren klikker på et sangkort
         function afspilSang(index) {
-            const sang = sangeListe[index]
+
+            const sang = alleSange[index]
+
             if (!sang) return
+
+            aktivSangIndex = index
+            spiller = true
+            progressProcent = 0
 
             const farve = getGenreFarve(sang.genre)
 
-            // Opdater titel og kunstner i afspilleren
-            document.getElementById('afspillerTitel').textContent = sang.title
-            document.getElementById('afspillerKunstner').textContent = sang.artist
+            // Opdater titel og kunstner
+            document.getElementById('afspillerTitel').textContent =
+                sang.title
 
-            // Opdater cover-billedets farve i afspilleren (matcher sangens genre)
+            document.getElementById('afspillerKunstner').textContent =
+                sang.artist
+
+            // Opdater cover-farve
             document.getElementById('afspillerBillede').className =
-                `w-16 h-16 md:w-14 md:h-14 rounded-[1.5rem] ${farve} border border-white/20 flex-shrink-0`
+                `w-16 h-16 md:w-14 md:h-14 rounded-[1.5rem]
+                ${farve}
+                border border-white/20 flex-shrink-0`
 
-            // Opdater varighed
+            // Opdater total tid
             const min = Math.floor(sang.duration_ms / 60000)
-            const sek = String(Math.floor((sang.duration_ms % 60000) / 1000)).padStart(2, '0')
-            document.getElementById('totalTid').textContent = `${min}:${sek}`
-            document.getElementById('nuværendeTid').textContent = '0:00'
-            document.getElementById('progressFill').style.width = '0%'
 
-            // Skift knap til pause-ikon
-            document.getElementById('spilPauseKnap').textContent = '⏸'
+            const sek = String(
+                Math.floor((sang.duration_ms % 60000) / 1000)
+            ).padStart(2, '0')
+
+            document.getElementById('totalTid').textContent =
+                `${min}:${sek}`
+
+            document.getElementById('nuværendeTid').textContent =
+                '0:00'
+
+            document.getElementById('progressFill').style.width =
+                '0%'
+
+            document.getElementById('spilPauseKnap').textContent =
+                '⏸'
+
+            // Opdater highlight
+            søgSange()
+
+            clearInterval(progressInterval)
+
+            // Fake progressbar-animation
+            progressInterval = setInterval(function () {
+
+                if (!spiller) return
+
+                progressProcent++
+
+                // Flyt progressbar
+                document.getElementById('progressFill').style.width =
+                    progressProcent + '%'
+
+                // Beregn nuværende tid
+                const nuMs =
+                    sang.duration_ms * (progressProcent / 100)
+
+                const nuMin =
+                    Math.floor(nuMs / 60000)
+
+                const nuSek = String(
+                    Math.floor((nuMs % 60000) / 1000)
+                ).padStart(2, '0')
+
+                document.getElementById('nuværendeTid').textContent =
+                    `${nuMin}:${nuSek}`
+
+                // Auto næste sang
+                if (progressProcent >= 100) {
+
+                    clearInterval(progressInterval)
+
+                    næsteSang()
+                }
+
+            }, 300)
         }
 
-        // ─── MERGE ──────────────────────────────────────
-        async function startMerge() {
-            const userA = document.getElementById('merge-user-a').value
-            const userB = document.getElementById('merge-user-b').value
-            if (!userA || !userB) return
+        // ─── PLAY / PAUSE ──────────────────────────────
+        function togglePlayPause() {
 
-            const res = await fetch('/api/merge?userA=' + userA + '&userB=' + userB)
-            const sange = await res.json()
+            if (aktivSangIndex === null) return
 
-            sangeListe = sange  // Gem så afspilSang() kan finde sangene
+            spiller = !spiller
 
-            const container = document.getElementById('merge-liste')
+            document.getElementById('spilPauseKnap').textContent =
+                spiller ? '⏸' : '▶'
+        }
+
+        // ─── NÆSTE SANG ────────────────────────────────
+        function næsteSang() {
+
+            if (aktivSangIndex === null) return
+
+            aktivSangIndex++
+
+            if (aktivSangIndex >= alleSange.length) {
+                aktivSangIndex = 0
+            }
+
+            afspilSang(aktivSangIndex)
+        }
+
+        // ─── FORRIGE SANG ──────────────────────────────
+        function forrigeSang() {
+
+            if (aktivSangIndex === null) return
+
+            aktivSangIndex--
+
+            if (aktivSangIndex < 0) {
+                aktivSangIndex = alleSange.length - 1
+            }
+
+            afspilSang(aktivSangIndex)
+        }
+
+        // ─── LIVE SØGNING ─────────────────────────────
+        // Filtrerer sange ud fra søgefeltet
+        function søgSange() {
+
+            const tekst =
+                document.getElementById('søgefelt')
+                    .value
+                    .toLowerCase()
+
+            const filtreredeSange = alleSange.filter(function (sang) {
+
+                return (
+                    sang.title.toLowerCase().includes(tekst) ||
+                    sang.artist.toLowerCase().includes(tekst)
+                )
+            })
+
+            visSange(filtreredeSange)
+        }
+
+        // ─── TILFØJ TIL MIXTAPE ─────────────────────
+        function tilføjTilMixtape(index) {
+
+            const sang = alleSange[index]
+
+            if (!sang) return
+
+            // Tjek om sangen allerede findes i mixtape
+            const findes = mixtapeListe.find(function (item) {
+                return item.id === sang.id
+            })
+
+            // Tilføj kun hvis den ikke findes
+            if (!findes) {
+                mixtapeListe.push(sang)
+            }
+
+            visMixtape()
+        }
+
+        // ─── FJERN FRA MIXTAPE ─────────────────────
+        function fjernFraMixtape(index) {
+
+            mixtapeListe.splice(index, 1)
+
+            visMixtape()
+        }
+
+        // ─── MIT MIXTAPE ───────────────────────────────
+        function visMixtape() {
+
+            const container =
+                document.getElementById('mixtape-liste')
+
             container.innerHTML = ''
-            sange.forEach(function (sang, index) {
-                container.innerHTML += sangKort(sang, index + 1)
+
+            // Ingen sange endnu
+            if (mixtapeListe.length === 0) {
+
+                container.innerHTML = `
+                    <p class="text-zinc-400 text-sm">
+                        Ingen sange i mixtape endnu
+                    </p>
+                `
+
+                return
+            }
+
+            // Vis sange
+            mixtapeListe.forEach(function (sang, index) {
+
+                const rigtigIndex =
+                    alleSange.indexOf(sang)
+
+                container.innerHTML += `
+                    <div class="relative">
+
+                        ${sangKort(
+                            sang,
+                            index + 1,
+                            rigtigIndex,
+                            false
+                        )}
+
+                        <button
+                            onclick="fjernFraMixtape(${index})"
+                            class="absolute top-1/2 -translate-y-1/2 right-12 text-xs bg-red-500 hover:bg-red-600 w-4 h-4 rounded-full">
+                            ✕
+                        </button>
+
+                    </div>
+                `
             })
         }
 
         // ─── BILLBOARD ──────────────────────────────────
         async function hentBillboard() {
+
             try {
-                const genre = document.getElementById('billboard-genre-filter').value
-                const url = genre ? `/api/billboard?genre=${genre}` : '/api/billboard'
 
-                const response = await fetch(url)
-                const sange = await response.json()
+                const genre =
+                    document.getElementById('billboard-genre-filter').value
 
-                sangeListe = sange  // Gem så afspilSang() kan finde sangene
+                const url =
+                    genre
+                        ? `/api/billboard?genre=${genre}`
+                        : '/api/billboard'
 
-                console.log("Modtaget data:", sange)
+                const response =
+                    await fetch(url)
 
-                const container = document.getElementById('billboard-liste')
-                container.innerHTML = ''
+                const sange =
+                    await response.json()
 
-                for (let i = 0; i < sange.length; i++) {
-                    container.innerHTML += sangKort(sange[i], i + 1)
-                }
+                sangeListe = sange
+                alleSange = sange
+
+                console.log('Modtaget data:', sange)
+
+                visSange(sange)
+
             } catch (error) {
-                console.error("Fejl ved hentning af billboard:", error)
+
+                console.error(
+                    'Fejl ved hentning af billboard:',
+                    error
+                )
             }
         }
 
-        // ─── START APPLIKATIONEN ────────────────────────
+        // ─── SPOL SANG ─────────────────────────────
+        // Brugeren kan klikke på progressbaren og spole
+        function spolSang(event) {
 
-        // Kør med det samme når siden loader
+            const bar =
+                document.getElementById('progressBar')
+
+            const klikX = event.offsetX
+
+            progressProcent =
+                (klikX / bar.offsetWidth) * 100
+
+            document.getElementById('progressFill').style.width =
+                progressProcent + '%'
+
+            if (aktivSangIndex === null) return
+
+            const sang =
+                alleSange[aktivSangIndex]
+
+            const nuMs =
+                sang.duration_ms * (progressProcent / 100)
+
+            const min =
+                Math.floor(nuMs / 60000)
+
+            const sek = String(
+                Math.floor((nuMs % 60000) / 1000)
+            ).padStart(2, '0')
+
+            document.getElementById('nuværendeTid').textContent =
+                `${min}:${sek}`
+        }
+
+        // ─── GRUPPE MIX ─────────────────────────────
+        async function startMerge() {
+
+            const userA =
+                document.getElementById('merge-user-a').value
+
+            const userB =
+                document.getElementById('merge-user-b').value
+
+            const container =
+                document.getElementById('merge-liste')
+
+            container.innerHTML = `
+                <p class="text-zinc-400 text-sm">
+                    Loader mixtapes...
+                </p>
+            `
+
+            const response =
+                await fetch(
+                    `/api/merge?userA=${userA}&userB=${userB}`
+                )
+
+            const sange =
+                await response.json()
+
+            container.innerHTML = ''
+
+            if (sange.length === 0) {
+
+                container.innerHTML = `
+                    <p class="text-zinc-400 text-sm">
+                        Ingen fælles sange fundet.
+                    </p>
+                `
+
+                return
+            }
+
+            sange.forEach(function (sang, index) {
+
+                container.innerHTML += sangKort(
+                    sang,
+                    index + 1,
+                    index,
+                    false
+                )
+            })
+        }
+
+        // ─── START APP ────────────────────────────────
         document.addEventListener('DOMContentLoaded', function () {
+
             hentBillboard()
+
+            visMixtape()
+
         })
 
-        // Opdater listen hvis brugeren skifter genre i dropdown-menuen
-        document.getElementById('billboard-genre-filter').addEventListener('change', function () {
-            hentBillboard()
-        })
+        // Genre filter
+        document.getElementById('billboard-genre-filter')
+            .addEventListener('change', function () {
 
+                hentBillboard()
+
+            })
+
+        // Knapper
+        document.getElementById('spilPauseKnap')
+            .addEventListener('click', togglePlayPause)
+
+        document.getElementById('næsteKnap')
+            .addEventListener('click', næsteSang)
+
+        document.getElementById('forrigeKnap')
+            .addEventListener('click', forrigeSang)
+
+        // Søgefelt
+        document.getElementById('søgefelt')
+            .addEventListener('input', søgSange)
+
+        // Progressbar klik
+        document.getElementById('progressBar')
+            .addEventListener('click', spolSang)
     </script>
 
 </body>
