@@ -78,39 +78,20 @@
                     <p class="text-sm text-zinc-500 mt-1">Top sange baseret på global Elo-rating</p>
                 </div>
                 <!-- Genre filter -->
-                <select id="billboard-genre-filter" class="bg-white/10 border border-white/10 rounded-lg px-3 py-1 
-                       text-sm text-white outline-none">
+                <select id="billboard-genre-filter"
+                    class="bg-white/10 border border-white/10 rounded-lg px-3 py-1 text-sm text-white outline-none">
                     <option value="">Alle genrer</option>
                     <option value="pop">Pop</option>
                     <option value="rock">Rock</option>
                     <option value="hip-hop">Hip-Hop</option>
                     <option value="disco">Disco</option>
                     <option value="jazz">Jazz</option>
-
-
                 </select>
             </div>
+
             <!-- Sangliste — udfyldes af JavaScript -->
             <div id="billboard-liste" class="flex flex-col gap-2">
-
-                <div class="flex items-center gap-4 px-4 py-3 rounded-xl border border-white/10 bg-white/5 
-                        hover:bg-white/10 transition-colors cursor-pointer">
-
-                </div>
-                <!-- Eksempel på hvordan et sang-kort ser ud: -->
-                <!-- 
-        <div class="flex items-center gap-4 px-4 py-3 rounded-xl
-                    bg-white/5 border border-white/10
-                    hover:bg-white/10 transition-colors cursor-pointer">
-          <span class="text-zinc-500 text-sm w-6 text-center">1</span>
-          <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-white truncate">Sangtitel</p>
-            <p class="text-xs text-zinc-400 truncate">Kunstner · Genre</p>
-          </div>
-          <span class="text-xs font-mono bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full">1480</span>
-          <span class="text-xs text-zinc-500">3:20</span>
-        </div>
-        -->
+                <!-- Kortene bygges dynamisk af sangKort() funktionen. kig nede i script -->
             </div>
         </div>
 
@@ -185,7 +166,38 @@
     </div>
 
     <script>
-        // ─── VIEW NAVIGATION ───────────────────────────
+        // ─── GLOBAL SANGELISTE ──────────────────────────
+        // Gemmer de sange der vises, så afspilSang() kan finde den rigtige sang
+        let sangeListe = []
+
+        // ─── GENREFARVE ─────────────────────────────────
+        // Returnerer en Tailwind baggrundsfarveklasse baseret på genre
+        function getGenreFarve(genre) {
+            if (!genre) return 'bg-zinc-500'
+
+            // De 5 kendte genrer får faste, unikke farver
+            const kendte = {
+                'rock': 'bg-red-500',
+                'pop': 'bg-pink-500',
+                'hip-hop': 'bg-green-500',
+                'disco': 'bg-purple-500',
+                'jazz': 'bg-amber-500',
+            }
+
+            const genreLower = genre.toLowerCase()
+            if (kendte[genreLower]) return kendte[genreLower]
+
+            // Ukendte genrer: vælg en konsistent farve baseret på genrenavnet
+            // Vi lægger bogstavernes tal (charCode) sammen og bruger resten (modulo) tilføj evt flere farver til array'et for at skabe flere farver
+            const ekstraFarver = ['bg-cyan-500', 'bg-orange-500', 'bg-teal-500', 'bg-indigo-500', 'bg-rose-400', 'bg-lime-500']
+            let sum = 0
+            for (let i = 0; i < genre.length; i++) {
+                sum += genre.charCodeAt(i)
+            }
+            return ekstraFarver[sum % ekstraFarver.length]
+        }
+
+        // ─── VIEW NAVIGATION ────────────────────────────
         function skiftView(viewNavn) {
             document.querySelectorAll('.view').forEach(function (view) {
                 view.classList.add('hidden')
@@ -193,9 +205,71 @@
             document.getElementById('view-' + viewNavn).classList.remove('hidden')
         }
 
-        // ─── HER TILFØJER DU DINE FETCH KALD ───────────
-        // fx hentBillboard(), hentMixtape(), startMerge()
+        // ─── SANGKORT ───────────────────────────────────
+        // Bygger HTML for ét sangkort og returnerer det som en tekststreng.
+        // onclick kalder afspilSang() med sangens index i den globale sangeListe.
+        function sangKort(sang, nummer) {
+            const min = Math.floor(sang.duration_ms / 60000)
+            const sek = String(
+                Math.floor((sang.duration_ms % 60000) / 1000)
+            ).padStart(2, '0')
 
+            const farve = getGenreFarve(sang.genre)
+            const index = nummer - 1  // index 0-baseret, nummer 1-baseret
+
+            return `
+        <div onclick="afspilSang(${index})" class="flex items-center gap-6 px-4 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">
+            <span class="text-white text-center w-6 font-medium">
+                ${nummer}
+            </span>
+            <div class="w-12 h-12 rounded-xl ${farve} flex-shrink-0 opacity-80"></div>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-white truncate">
+                    ${sang.title}
+                </p>
+                <p class="text-zinc-400 text-xs mt-0.5">
+                    ${sang.artist}
+                </p>
+            </div>
+            <span class="text-xs font-mono ${farve} text-white px-2 py-0.5 rounded-full">
+                ${sang.elo_rating}
+            </span>
+            <span class="text-xs text-zinc-400">
+                ${min}:${sek}
+            </span>
+        </div>
+    `
+        }
+
+        // ─── AFSPIL SANG ────────────────────────────────
+        // Kaldes når brugeren klikker på et sangkort.
+        // Opdaterer afspiller-baren i bunden med den valgte sangs info.
+        function afspilSang(index) {
+            const sang = sangeListe[index]
+            if (!sang) return
+
+            const farve = getGenreFarve(sang.genre)
+
+            // Opdater titel og kunstner i afspilleren
+            document.getElementById('afspillerTitel').textContent = sang.title
+            document.getElementById('afspillerKunstner').textContent = sang.artist
+
+            // Opdater cover-billedets farve i afspilleren (matcher sangens genre)
+            document.getElementById('afspillerBillede').className =
+                `w-16 h-16 md:w-14 md:h-14 rounded-[1.5rem] ${farve} border border-white/20 flex-shrink-0`
+
+            // Opdater varighed
+            const min = Math.floor(sang.duration_ms / 60000)
+            const sek = String(Math.floor((sang.duration_ms % 60000) / 1000)).padStart(2, '0')
+            document.getElementById('totalTid').textContent = `${min}:${sek}`
+            document.getElementById('nuværendeTid').textContent = '0:00'
+            document.getElementById('progressFill').style.width = '0%'
+
+            // Skift knap til pause-ikon
+            document.getElementById('spilPauseKnap').textContent = '⏸'
+        }
+
+        // ─── MERGE ──────────────────────────────────────
         async function startMerge() {
             const userA = document.getElementById('merge-user-a').value
             const userB = document.getElementById('merge-user-b').value
@@ -204,6 +278,8 @@
             const res = await fetch('/api/merge?userA=' + userA + '&userB=' + userB)
             const sange = await res.json()
 
+            sangeListe = sange  // Gem så afspilSang() kan finde sangene
+
             const container = document.getElementById('merge-liste')
             container.innerHTML = ''
             sange.forEach(function (sang, index) {
@@ -211,8 +287,42 @@
             })
         }
 
-      
+        // ─── BILLBOARD ──────────────────────────────────
+        async function hentBillboard() {
+            try {
+                const genre = document.getElementById('billboard-genre-filter').value
+                const url = genre ? `/api/billboard?genre=${genre}` : '/api/billboard'
+
+                const response = await fetch(url)
+                const sange = await response.json()
+
+                sangeListe = sange  // Gem så afspilSang() kan finde sangene
+
+                console.log("Modtaget data:", sange)
+
+                const container = document.getElementById('billboard-liste')
+                container.innerHTML = ''
+
+                for (let i = 0; i < sange.length; i++) {
+                    container.innerHTML += sangKort(sange[i], i + 1)
+                }
+            } catch (error) {
+                console.error("Fejl ved hentning af billboard:", error)
+            }
         }
+
+        // ─── START APPLIKATIONEN ────────────────────────
+
+        // Kør med det samme når siden loader
+        document.addEventListener('DOMContentLoaded', function () {
+            hentBillboard()
+        })
+
+        // Opdater listen hvis brugeren skifter genre i dropdown-menuen
+        document.getElementById('billboard-genre-filter').addEventListener('change', function () {
+            hentBillboard()
+        })
+
     </script>
 
 </body>
