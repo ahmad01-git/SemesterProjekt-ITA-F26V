@@ -194,9 +194,9 @@ function startProgress(sang) {
 
     progressInterval = setInterval(function () {
 
-    if (spiller === false) return
+        if (spiller === false) return
 
-    progressProcent++
+        progressProcent += 100 / (sang.duration_ms / 300)
 
         document.getElementById('progressFill').style.width =
             progressProcent + '%'
@@ -219,7 +219,6 @@ function startProgress(sang) {
         }
 
     }, 300)
-
 }
  function næsteSang() {
     if (aktivSangIndex === null) return
@@ -267,29 +266,6 @@ function togglePlayPause() {
             .textContent = '⏸'
     }
 
-}
-
-function togglePlayPause() {
-
-    // Stop hvis ingen sang spiller
-    if (aktivSangIndex === null) return
-
-    // Pause
-    if (spiller === true) {
-
-        spiller = false
-
-        document.getElementById('spilPauseKnap')
-            .textContent = '▶'
-
-    } else {
-
-        // Play igen
-        spiller = true
-
-        document.getElementById('spilPauseKnap')
-            .textContent = '⏸'
-    }
 }
 
 // ─── SPOL SANG ─────────────────────────────
@@ -389,6 +365,8 @@ function spolSang(event) {
             document.getElementById('næsteKnap').addEventListener('click', næsteSang)
 
             document.getElementById('forrigeKnap').addEventListener('click', forrigeSang)
+
+            document.getElementById('spilPauseKnap').addEventListener('click', togglePlayPause)
 
             document.getElementById('progressBar').addEventListener('click', spolSang)
 
