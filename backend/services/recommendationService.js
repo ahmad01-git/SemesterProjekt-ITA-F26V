@@ -1,14 +1,13 @@
 const { pool } = require('../../db/connect');
 
-// her vælger vi to tilfældige sange fra en given genre ved at sortere dem tilfældigt
-// og returnere de to første sange der har den given genre
-// seen er en liste over sange der allerede er vist, så vi ikke viser samme par to gange
+// Her vælger vi to tilfældige sange fra en given genre.
+// 'seen' er en liste over sang-IDs der allerede er vist, så vi undgår gentagelser.
 async function hent2PairwiseSange(genre, seen) {
     let forespørgsel = "SELECT * FROM tracks WHERE genre = $1";
     let parametre = [genre];
 
     if (seen && seen.length > 0) {
-        // Lav et array af placeholders: $2, $3, $4...
+        // Byg en liste af placeholders: $2, $3, $4 ...
         let placeholders = [];
         for (let i = 0; i < seen.length; i++) {
             placeholders.push("$" + (i + 2));
@@ -23,113 +22,90 @@ async function hent2PairwiseSange(genre, seen) {
     return resultat.rows;
 }
 
-// her vælger vi de to sange der har den højeste elo rating ved at sortere dem efter elo rating
-// og returnere de to første sange
-async function hentTopToPairwiseSange() {
-    const resultat = await pool.query(
-        "SELECT * FROM tracks ORDER BY elo_rating DESC LIMIT 2"
-    );
-    return resultat.rows;
-}
-
-async function hentTop10Sange() {
-    const resultat = await pool.query(
-        "SELECT * FROM tracks ORDER BY elo_rating DESC LIMIT 10"
-    );
-    return resultat.rows;
-}
-
-// her bruger vi hentOnboardingSange til at hente sange til onboarding
-// den fungere ved at den tager en liste over genrer
-// og returnere en liste over de sange der passer bedst til de valgte genrer
+// Her henter vi sange til onboarding baseret på brugerens valgte genrer.
+// Logikken fordeler sange jævnt på tværs af genrer og fylder op med wildcards.
 async function hentOnboardingSange(genres) {
-    // Vi laver en tom liste som skal indeholde alle de sange brugeren får anbefalet
     let alleSange = [];
 
-    // Her finder vi ud af hvor mange genrer brugeren har valgt
     const antalGenrer = genres.length;
-
-    // Denne variabel bestemmer hvor mange top tracks vi tager fra hver genre
     let topPerGenre = 0;
 
-    // Hvis brugeren ikke har valgt nogen genrer
-    // stopper funktionen og returnerer en tom liste
+    // Returner tomt array hvis ingen genrer er valgt
     if (antalGenrer === 0) {
         console.log("Ingen genrer valgt");
         return alleSange;
 
-    // Hvis brugeren kun vælger 1 genre
-    // tager vi 7 top tracks fra den genre
+    // 1 genre: tag 7 top tracks
     } else if (antalGenrer === 1) {
         topPerGenre = 7;
 
-    // Hvis brugeren vælger 2 genrer
-    // tager vi 4 top tracks fra hver genre
+    // 2 genrer: tag 4 top tracks fra hver
     } else if (antalGenrer === 2) {
         topPerGenre = 4;
 
-    // Hvis brugeren vælger 3 genrer
-    // tager vi 3 top tracks fra hver genre
-    } else if (antalGenrer === 3) {
-        topPerGenre = 3;
-
-    // Hvis brugeren vælger 4 genrer
-    // tager vi 2 top tracks fra hver genre
-    } else if (antalGenrer === 4) {
-        topPerGenre = 2;
-
-    // Hvis brugeren vælger 5 genrer
-    // tager vi også 2 top tracks fra hver genre
-    } else if (antalGenrer === 5) {
+    // 3-5 genrer: tag 2 top tracks fra hver — resten fyldes med wildcards
+    } else {
         topPerGenre = 2;
     }
 
-    // Her henter vi top tracks fra hver genre
-    // Vi går igennem alle valgte genrer én efter én
-    for (const genre of genres) {
+    // Hent top tracks fra hver genre
+    for (let i = 0; i < genres.length; i++) {
+        const genre = genres[i];
         const resultat = await pool.query(
             "SELECT * FROM tracks WHERE genre = $1 ORDER BY elo_rating DESC LIMIT $2",
             [genre, topPerGenre]
         );
 
-        for (let i = 0; i < resultat.rows.length; i++) {
-            alleSange.push(resultat.rows[i]);
+        for (let j = 0; j < resultat.rows.length; j++) {
+            alleSange.push(resultat.rows[j]);
         }
     }
 
-    // Hvis vi stadig ikke har 10 tracks endnu
-    // fylder vi resten op med tilfældige tracks
-    while (alleSange.length < 10) {
-        const tilfældigGenre = genres[Math.floor(Math.random() * genres.length)];
-        const tilfældigSang = await pool.query(
-            "SELECT * FROM tracks WHERE genre = $1 ORDER BY RANDOM() LIMIT 1",
-            [tilfældigGenre]
-        );
+    // Fyld op til 10 sange med wildcards — fordelt jævnt på tværs af genrer
+    const mangler = 10 - alleSange.length;
+    if (mangler > 0) {
+        // Shuffle genrerne så wildcards ikke altid kommer fra samme genre
+        const shuffledeGenrer = genres.slice().sort(function () {
+            return Math.random() - 0.5;
+        });
+        let genreIndex = 0;
+        let forsøg = 0;
 
-        if (tilfældigSang.rows.length > 0) {
-            const sang = tilfældigSang.rows[0];
+        while (alleSange.length < 10 && forsøg < 50) {
+            forsøg++;
+            const genre = shuffledeGenrer[genreIndex % shuffledeGenrer.length];
+            genreIndex++;
 
-            // Tjek om sangen allerede er i listen
-            let erDublet = false;
-            for (let i = 0; i < alleSange.length; i++) {
-                if (alleSange[i].id === sang.id) {
-                    erDublet = true;
+            const tilfældigSang = await pool.query(
+                "SELECT * FROM tracks WHERE genre = $1 ORDER BY RANDOM() LIMIT 1",
+                [genre]
+            );
+
+            if (tilfældigSang.rows.length > 0) {
+                const sang = tilfældigSang.rows[0];
+
+                // Tjek om sangen allerede er i listen — undgå dubletter
+                let erDublet = false;
+                for (let k = 0; k < alleSange.length; k++) {
+                    if (alleSange[k].id === sang.id) {
+                        erDublet = true;
+                        break;
+                    }
+                }
+
+                if (!erDublet) {
+                    sang.is_wildcard = true; // Markér som wildcard — vises som badge i UI
+                    alleSange.push(sang);
                 }
             }
-
-            if (!erDublet) {
-                alleSange.push(sang);
-            }
         }
     }
 
-    // Til sidst returnerer vi listen med alle sangene
     return alleSange;
 }
 
-// her bruger vi hentBillboard til at hente billboard med de givne genre og artist
-// den fungere ved at den tager en genre og en artist og returnere en liste over de sang der har den given genre og artist
-// man kan ændre limit til 20 for at se top 20 sange
+// Her henter vi billboard — en liste over sange sorteret efter global Elo-rating.
+// Man kan filtrere på genre eller artist via query-parametre.
 async function hentBillboard(genre, artist) {
     let forespørgsel = "SELECT * FROM tracks";
     let parametre = [];
@@ -139,7 +115,7 @@ async function hentBillboard(genre, artist) {
         parametre.push(genre);
     } else if (artist) {
         forespørgsel += " WHERE artist ILIKE $1";
-        parametre.push('%' + artist + '%'); // % gør at man kan søge på dele af navnet
+        parametre.push('%' + artist + '%');
     }
 
     forespørgsel += " ORDER BY elo_rating DESC LIMIT 20";
@@ -150,8 +126,6 @@ async function hentBillboard(genre, artist) {
 
 module.exports = {
     hent2PairwiseSange,
-    hentTopToPairwiseSange,
-    hentTop10Sange,
     hentOnboardingSange,
     hentBillboard
 };

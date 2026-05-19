@@ -7,7 +7,7 @@ const { updatereElo, gemEloTilDatabase } = require('./services/eloService');
 const { hent2PairwiseSange, hentOnboardingSange, hentBillboard } = require('./services/recommendationService');
 const { gemBrugerMixtape, hentBrugerMixtape, nulstilBruger } = require('./services/mixtapeService');
 const { fletMixtapes } = require('./services/mergeService');
-const { hentNæsteSang, hentNæsteSangFraMixtape, hentNæsteSangFraFletning } = require('./services/queueService');
+const { hentNæsteSangFraMixtape } = require('./services/queueService');
 
 const app = express();
 const PORT = 3000;
@@ -54,6 +54,11 @@ app.post('/api/vote', async function (req, res) {
     try {
         const { winner_id, loser_id, winner_elo, loser_elo } = req.body;
 
+        // Simpel validering — alle fire felter skal være til stede
+        if (!winner_id || !loser_id || winner_elo === undefined || loser_elo === undefined) {
+            return res.status(400).json({ error: "winner_id, loser_id, winner_elo og loser_elo er påkrævet" });
+        }
+
         const nyVinderRating = updatereElo(winner_elo, loser_elo, 1);
         const nyTaberRating = updatereElo(loser_elo, winner_elo, 0);
 
@@ -66,11 +71,17 @@ app.post('/api/vote', async function (req, res) {
     }
 });
 
-// ROUTE 4: Hent næste sang
-// her bruger vi hentNæsteSang fra queueService.js til at hente den sang med den højeste elo rating
+// ROUTE 4: Hent næste sang fra brugerens mixtape (bruges af afspilleren)
 app.get('/api/next-track', async function (req, res) {
     try {
-        const sang = await hentNæsteSang();
+        const username = req.query.username;
+        const index = parseInt(req.query.index) || 0;
+
+        if (!username) {
+            return res.status(400).json({ error: "username er påkrævet" });
+        }
+
+        const sang = await hentNæsteSangFraMixtape(username, index);
         res.json(sang);
     } catch (err) {
         res.status(500).json({ error: "Kunne ikke hente næste sang" });
@@ -93,11 +104,16 @@ app.get('/api/onboarding', async function (req, res) {
 
 // ROUTE 6: Gem mixtape (POST)
 // her bruger vi gemBrugerMixtape fra mixtapeService.js til at gemme mixtape
-// det fungere ved at det tager et brugernavn og en liste over track id'er og gemmer dem i databasen
+// det fungere ved at det tager et brugernavn, sang-id'er og et valgfrit mixtape navn og gemmer dem
 app.post('/api/mixtape', async function (req, res) {
     try {
-        const { username, trackIds } = req.body;
-        await gemBrugerMixtape(username, trackIds);
+        const { username, trackIds, name } = req.body;
+
+        if (!username || !trackIds || trackIds.length === 0) {
+            return res.status(400).json({ error: "username og trackIds er påkrævet" });
+        }
+
+        await gemBrugerMixtape(username, trackIds, name);
         res.json({ success: true, message: "Mixtape gemt!" });
     } catch (err) {
         res.status(500).json({ error: "Kunne ikke gemme mixtape" });
@@ -123,6 +139,11 @@ app.get('/api/mixtape', async function (req, res) {
 app.delete('/api/reset', async function (req, res) {
     try {
         const username = req.query.username;
+
+        if (!username) {
+            return res.status(400).json({ error: "username er påkrævet" });
+        }
+
         await nulstilBruger(username);
         res.json({ success: true, message: "Bruger nulstillet" });
     } catch (err) {

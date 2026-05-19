@@ -33,6 +33,7 @@ async function createTables() {
         id          SERIAL PRIMARY KEY,
         username    VARCHAR(100),
         track_id    INTEGER REFERENCES tracks(id),
+        mixtape_name VARCHAR(255) DEFAULT 'Mit Mixtape',
         added_at    TIMESTAMP DEFAULT NOW()
       )
     `)

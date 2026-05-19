@@ -3,12 +3,14 @@ const { pool } = require('../../db/connect');
 // her bruger vi gemBrugerMixtape til at gemme en brugers mixtape
 // den fungere ved at den tager et brugernavn og en liste over track id'er og gemmer dem i databasen
 // den bruger on conflict do nothing til at undgå dubletter
-async function gemBrugerMixtape(username, trackIds) {
+async function gemBrugerMixtape(username, trackIds, mixtapeName = 'Mit Mixtape') {
     // loop og gem
     for (const trackId of trackIds) {
+        // Bemærk: Hvis der var UNIQUE constraint på (username, track_id), ville DO NOTHING virke.
+        // I Neon uden constraint gemmer vi bare rækken.
         await pool.query(
-            "INSERT INTO user_mixtapes (username, track_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
-            [username, trackId]
+            "INSERT INTO user_mixtapes (username, track_id, mixtape_name) VALUES ($1, $2, $3)",
+            [username, trackId, mixtapeName]
         );
     }
 }
@@ -17,7 +19,7 @@ async function gemBrugerMixtape(username, trackIds) {
 // den fungere ved at den tager et brugernavn og returnere en liste over de sang der er i brugerens mixtape
 async function hentBrugerMixtape(username) {
     const resultat = await pool.query(
-        "SELECT tracks.* FROM user_mixtapes JOIN tracks ON tracks.id = user_mixtapes.track_id WHERE user_mixtapes.username = $1",
+        "SELECT tracks.*, user_mixtapes.mixtape_name FROM user_mixtapes JOIN tracks ON tracks.id = user_mixtapes.track_id WHERE user_mixtapes.username = $1",
         [username]
     );
     return resultat.rows;
