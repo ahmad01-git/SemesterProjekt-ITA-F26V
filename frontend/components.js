@@ -98,7 +98,7 @@ function indsætAfspiller() {
         '</div>' +
         '<div class="flex items-center gap-4 w-full md:w-[30%]">' +
             '<span class="text-xs text-zinc-400 w-10 text-right" id="nuværendeTid">0:00</span>' +
-            '<div class="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden">' +
+            '<div id="progressBar" class="flex-1 h-1.5 bg-white/20 rounded-full overflow-hidden cursor-pointer">' +
                 '<div class="h-full w-0 bg-red-500 transition-all ease-linear" id="progressFill"></div>' +
             '</div>' +
             '<span class="text-xs text-zinc-400 w-10" id="totalTid">0:00</span>' +
