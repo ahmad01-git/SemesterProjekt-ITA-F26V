@@ -29,31 +29,26 @@
         <div id="trin-1" class="w-full max-w-lg">
             <div class="mb-8">
                 <label class="text-sm font-medium text-zinc-400 mb-2 block">Dit navn</label>
-                <input type="text" id="username-input" placeholder="fx casper"
-                    class="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3
+                <input type="text" id="username-input" placeholder="fx casper" class="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3
                           text-white placeholder-zinc-500 outline-none
                           focus:border-red-500/50 transition-colors text-sm" />
             </div>
             <div class="mb-8">
                 <label class="text-sm font-medium text-zinc-400 mb-3 block">Vælg op til 3 genrer</label>
                 <div class="grid grid-cols-2 gap-3 mb-6">
-                    <button data-genre="pop" data-farve="bg-pink-500" onclick="toggleGenre(this)"
-                        class="genre-knap border border-white/10 bg-white/5 rounded-xl px-4 py-4
+                    <button data-genre="pop" data-farve="bg-pink-500" onclick="toggleGenre(this)" class="genre-knap border border-white/10 bg-white/5 rounded-xl px-4 py-4
                                text-sm font-medium hover:border-white/20 transition-colors text-left text-white">
                         Pop
                     </button>
-                    <button data-genre="rock" data-farve="bg-red-500" onclick="toggleGenre(this)"
-                        class="genre-knap border border-white/10 bg-white/5 rounded-xl px-4 py-4
+                    <button data-genre="rock" data-farve="bg-red-500" onclick="toggleGenre(this)" class="genre-knap border border-white/10 bg-white/5 rounded-xl px-4 py-4
                                text-sm font-medium hover:border-white/20 transition-colors text-left text-white">
                         Rock
                     </button>
-                    <button data-genre="hip-hop" data-farve="bg-green-500" onclick="toggleGenre(this)"
-                        class="genre-knap border border-white/10 bg-white/5 rounded-xl px-4 py-4
+                    <button data-genre="hip-hop" data-farve="bg-green-500" onclick="toggleGenre(this)" class="genre-knap border border-white/10 bg-white/5 rounded-xl px-4 py-4
                                text-sm font-medium hover:border-white/20 transition-colors text-left text-white">
                         Hip-Hop
                     </button>
-                    <button data-genre="jazz" data-farve="bg-amber-500" onclick="toggleGenre(this)"
-                        class="genre-knap border border-white/10 bg-white/5 rounded-xl px-4 py-4
+                    <button data-genre="jazz" data-farve="bg-amber-500" onclick="toggleGenre(this)" class="genre-knap border border-white/10 bg-white/5 rounded-xl px-4 py-4
                                text-sm font-medium hover:border-white/20 transition-colors text-left text-white">
                         Jazz
                     </button>
@@ -88,8 +83,7 @@
                     <div id="sang-a-wildcard"
                         class="hidden absolute -top-3 right-2 bg-red-500 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide shadow-md z-10">
                         Wildcard</div>
-                    <div id="sang-a" onclick="stemPå(0)"
-                        class="h-full rounded-2xl p-6 cursor-pointer border border-white/10 bg-white/5
+                    <div id="sang-a" onclick="stemPå(0)" class="h-full rounded-2xl p-6 cursor-pointer border border-white/10 bg-white/5
                             hover:bg-white/10 hover:border-white/20 transition-colors text-center overflow-hidden">
                         <div id="sang-a-farve"
                             class="w-16 h-16 rounded-xl mx-auto mb-4 border-[3px] border-zinc-700 bg-transparent"></div>
@@ -104,8 +98,7 @@
                     <div id="sang-b-wildcard"
                         class="hidden absolute -top-3 right-2 bg-red-500 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide shadow-md z-10">
                         Wildcard</div>
-                    <div id="sang-b" onclick="stemPå(1)"
-                        class="h-full rounded-2xl p-6 cursor-pointer border border-white/10 bg-white/5
+                    <div id="sang-b" onclick="stemPå(1)" class="h-full rounded-2xl p-6 cursor-pointer border border-white/10 bg-white/5
                             hover:bg-white/10 hover:border-white/20 transition-colors text-center overflow-hidden">
                         <div id="sang-b-farve"
                             class="w-16 h-16 rounded-xl mx-auto mb-4 border-[3px] border-zinc-700 bg-transparent"></div>
@@ -227,6 +220,8 @@
 
         // ─── HENT NÆSTE PAR ──────────────────────────────
         // Vælger to sange fra den lokale onboardingSange-pulje — ingen ekstra API-kald
+        // VIGTIG: Garanterer ALDRIG wildcard VS wildcard
+        // Wildcard-dueller kun på runde 5, 10, 15
         function hentNæstePar() {
             // Find sange der ikke er vist endnu i denne omgang
             var tilgængelige = []
@@ -242,12 +237,40 @@
                 tilgængelige = onboardingSange.slice()
             }
 
-            var indexA = Math.floor(Math.random() * tilgængelige.length)
-            var sangA = tilgængelige[indexA]
-            tilgængelige.splice(indexA, 1)
-
-            var indexB = Math.floor(Math.random() * tilgængelige.length)
-            var sangB = tilgængelige[indexB]
+            var sangA
+            var sangB
+            
+            // Separer normale fra wildcards
+            var normaleSange = []
+            var wildcards = []
+            
+            for (var i = 0; i < tilgængelige.length; i++) {
+                if (tilgængelige[i].is_wildcard) {
+                    wildcards.push(tilgængelige[i])
+                } else {
+                    normaleSange.push(tilgængelige[i])
+                }
+            }
+            
+            // Strategi: Kun på runde 5, 10, 15 skal wildcards være med
+            var erWildcardRunde = (rundeNummer === 4 || rundeNummer === 9 || rundeNummer === 14)
+            
+            if (erWildcardRunde && wildcards.length > 0 && normaleSange.length > 0) {
+                // Wildcard-duel: 1 wildcard + 1 NORMAL sang (ALDRIG wildcard vs wildcard)
+                var randomWildcardIndex = Math.floor(Math.random() * wildcards.length)
+                sangA = wildcards[randomWildcardIndex]
+                
+                var randomNormalIndex = Math.floor(Math.random() * normaleSange.length)
+                sangB = normaleSange[randomNormalIndex]
+            } else {
+                // Normal runde: vælg vilkårligt fra tilgængelige
+                var indexA = Math.floor(Math.random() * tilgængelige.length)
+                sangA = tilgængelige[indexA]
+                tilgængelige.splice(indexA, 1)
+                
+                var indexB = Math.floor(Math.random() * tilgængelige.length)
+                sangB = tilgængelige[indexB]
+            }
 
             aktuelPar = [sangA, sangB]
             seenIds.push(sangA.id, sangB.id)
@@ -323,7 +346,8 @@
                     winner_id: vinder.id,
                     loser_id: taber.id,
                     winner_elo: gammelVinderElo,
-                    loser_elo: gammelTaberElo
+                    loser_elo: gammelTaberElo,
+                    username: username
                 })
             }).catch(function (err) {
                 console.error('Fejl ved vote i baggrunden:', err)

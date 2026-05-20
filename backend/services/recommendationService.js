@@ -23,7 +23,7 @@ async function hent2PairwiseSange(genre, seen) {
 }
 
 // Her henter vi sange til onboarding baseret på brugerens valgte genrer.
-// Logikken fordeler sange jævnt på tværs af genrer og fylder op med wildcards.
+// Logikken fordeler sange jævnt på tværs af genrer og fylder op med wildcards fra SAMME genrer.
 async function hentOnboardingSange(genres) {
     let alleSange = [];
 
@@ -61,43 +61,46 @@ async function hentOnboardingSange(genres) {
         }
     }
 
-    // Fyld op til 10 sange med wildcards — fordelt jævnt på tværs af genrer
+    // Fyld op til 10 sange med wildcards — VIGTIG: KUN fra de VALGTE genrer!
     const mangler = 10 - alleSange.length;
     if (mangler > 0) {
-        // Shuffle genrerne så wildcards ikke altid kommer fra samme genre
-        const shuffledeGenrer = genres.slice().sort(function () {
-            return Math.random() - 0.5;
-        });
-        let genreIndex = 0;
-        let forsøg = 0;
+        // Vi udelukker de sange, vi allerede har valgt
+        let eksisterendeIds = [];
+        for (let i = 0; i < alleSange.length; i++) {
+            eksisterendeIds.push(alleSange[i].id);
+        }
 
-        while (alleSange.length < 10 && forsøg < 50) {
-            forsøg++;
-            const genre = shuffledeGenrer[genreIndex % shuffledeGenrer.length];
-            genreIndex++;
+        // Byg WHERE-klausul for valgte genrer
+        let genreCondition = "(";
+        for (let g = 0; g < genres.length; g++) {
+            if (g > 0) genreCondition += " OR ";
+            genreCondition += "genre = $" + (g + 1);
+        }
+        genreCondition += ")";
 
-            const tilfældigSang = await pool.query(
-                "SELECT * FROM tracks WHERE genre = $1 ORDER BY RANDOM() LIMIT 1",
-                [genre]
-            );
+        let forespørgsel = "SELECT * FROM tracks WHERE " + genreCondition;
+        let parametre = genres.slice(); // Kopier genrer som første parametre
 
-            if (tilfældigSang.rows.length > 0) {
-                const sang = tilfældigSang.rows[0];
-
-                // Tjek om sangen allerede er i listen — undgå dubletter
-                let erDublet = false;
-                for (let k = 0; k < alleSange.length; k++) {
-                    if (alleSange[k].id === sang.id) {
-                        erDublet = true;
-                        break;
-                    }
-                }
-
-                if (!erDublet) {
-                    sang.is_wildcard = true; // Markér som wildcard — vises som badge i UI
-                    alleSange.push(sang);
-                }
+        // Tilføj excluded IDs
+        if (eksisterendeIds.length > 0) {
+            let placeholders = [];
+            for (let i = 0; i < eksisterendeIds.length; i++) {
+                placeholders.push("$" + (genres.length + i + 1));
+                parametre.push(eksisterendeIds[i]);
             }
+            forespørgsel += " AND id NOT IN (" + placeholders.join(", ") + ")";
+        }
+
+        // Limit sættes som det sidste parameter
+        parametre.push(mangler);
+        forespørgsel += " ORDER BY RANDOM() LIMIT $" + parametre.length;
+
+        const tilfældigeSange = await pool.query(forespørgsel, parametre);
+
+        for (let i = 0; i < tilfældigeSange.rows.length; i++) {
+            const sang = tilfældigeSange.rows[i];
+            sang.is_wildcard = true; // Markér som wildcard
+            alleSange.push(sang);
         }
     }
 

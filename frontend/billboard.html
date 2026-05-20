@@ -49,9 +49,16 @@
 
         <!-- MIXTAPE VIEW: Brugerens personlige liste -->
         <div id="view-mixtape" class="view hidden">
-            <div class="mb-6">
-                <h1 id="mixtape-titel" class="text-3xl font-bold">Mit Mixtape</h1>
-                <p class="text-sm text-zinc-500 mt-1">Din personlige samling</p>
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 id="mixtape-titel" class="text-3xl font-bold">Mit Mixtape</h1>
+                    <p class="text-sm text-zinc-500 mt-1">Din personlige samling</p>
+                </div>
+                <!-- Mixtape filter -->
+                <select id="mixtape-filter"
+                    class="bg-white/10 border border-white/10 rounded-lg px-3 py-1 text-sm text-white outline-none">
+                    <option value="">Privat Billboard (Alle)</option>
+                </select>
             </div>
 
             <!-- Vises hvis brugeren ikke har et mixtape endnu -->
@@ -87,10 +94,6 @@
         // Gemmer de sange der vises, så afspilSang() kan finde den rigtige sang via index
         var sangeListe = []
 
-        var aktivSangIndex = null
-        var progressInterval = null
-        var progressProcent = 0
-        var spiller = false
 
         // ─── GENREFARVE ─────────────────────────────────
         // Returnerer en Tailwind baggrundsfarveklasse baseret på genre.
@@ -152,136 +155,10 @@
                     '<p class="text-sm font-medium text-white truncate">' + sang.title + '</p>' +
                     '<p class="text-zinc-400 text-xs mt-0.5">' + sang.artist + '</p>' +
                 '</div>' +
-                '<span class="text-xs font-mono ' + farve + ' text-white px-2 py-0.5 rounded-full">' + sang.elo_rating + '</span>' +
+                '<span class="text-xs font-mono ' + farve + ' text-white px-2 py-0.5 rounded-full">' + (sang.user_elo_rating || sang.elo_rating) + '</span>' +
                 '<span class="text-xs text-zinc-400">' + min + ':' + sek + '</span>' +
                 '</div>'
         }
-
-        // ─── AFSPIL SANG ────────────────────────────────
-// Kaldes når brugeren klikker på et sangkort
-function afspilSang(index) {
-    var sang = sangeListe[index]
-    if (!sang) return
-
-    var farve = hentGenreFarve(sang.genre)
-
-    document.getElementById('afspillerTitel').textContent = sang.title
-    document.getElementById('afspillerKunstner').textContent = sang.artist
-
-    document.getElementById('afspillerBillede').className =
-        'w-16 h-16 md:w-14 md:h-14 rounded-[1.5rem] ' + farve + ' border border-white/20 flex-shrink-0'
-
-    var min = Math.floor(sang.duration_ms / 60000)
-    var sek = String(Math.floor((sang.duration_ms % 60000) / 1000)).padStart(2, '0')
-
-    document.getElementById('totalTid').textContent = min + ':' + sek
-    document.getElementById('nuværendeTid').textContent = '0:00'
-    document.getElementById('progressFill').style.width = '0%'
-
-    document.getElementById('spilPauseKnap').textContent = '⏸'
-
-    aktivSangIndex = index
-    spiller = true
-    startProgress(sang)
-}
-
-// ─── START PROGRESSBAR ──────────────────────────
-// Starter den røde progressbar og opdaterer tiden
-function startProgress(sang) {
-    clearInterval(progressInterval)
-
-    progressProcent = 0
-
-    progressInterval = setInterval(function () {
-
-        if (spiller === false) return
-
-        progressProcent += 100 / (sang.duration_ms / 300)
-
-        document.getElementById('progressFill').style.width =
-            progressProcent + '%'
-
-        var nuTid = sang.duration_ms * progressProcent / 100
-
-        var min = Math.floor(nuTid / 60000)
-        var sek = Math.floor((nuTid % 60000) / 1000)
-
-        if (sek < 10) {
-            sek = '0' + sek
-        }
-
-        document.getElementById('nuværendeTid').textContent =
-            min + ':' + sek
-
-        if (progressProcent >= 100) {
-            clearInterval(progressInterval)
-            næsteSang()
-        }
-
-    }, 300)
-}
- function næsteSang() {
-    if (aktivSangIndex === null) return
-
-    aktivSangIndex++
-
-    if (aktivSangIndex >= sangeListe.length) {
-        aktivSangIndex = 0
-    }
-
-    afspilSang(aktivSangIndex)
-}
-
-function forrigeSang() {
-    if (aktivSangIndex === null) return
-
-    aktivSangIndex--
-
-    if (aktivSangIndex < 0) {
-        aktivSangIndex = sangeListe.length - 1
-    }
-
-    afspilSang(aktivSangIndex)
-}
-
-function togglePlayPause() {
-
-    // Stop hvis ingen sang spiller
-    if (aktivSangIndex === null) return
-
-    // Pause
-    if (spiller === true) {
-
-        spiller = false
-
-        document.getElementById('spilPauseKnap')
-            .textContent = '▶'
-
-    } else {
-
-        // Play igen
-        spiller = true
-
-        document.getElementById('spilPauseKnap')
-            .textContent = '⏸'
-    }
-
-}
-
-// ─── SPOL SANG ─────────────────────────────
-// Brugeren kan klikke på progressbaren
-function spolSang(event) {
-
-    if (aktivSangIndex === null) return
-
-    var bar = document.getElementById('progressBar')
-
-    progressProcent =
-        event.offsetX / bar.offsetWidth * 100
-
-    document.getElementById('progressFill').style.width =
-        progressProcent + '%'
-}
 
 
         // ─── BILLBOARD ──────────────────────────────────
@@ -322,7 +199,28 @@ function spolSang(event) {
             }
 
             try {
-                var res = await fetch('/api/mixtape?username=' + username)
+                // 1. Hent mixtape-listen (dropdown muligheder) hvis ikke allerede hentet
+                var filterSelect = document.getElementById('mixtape-filter')
+                if (filterSelect.options.length <= 1) {
+                    var namesRes = await fetch('/api/mixtapes?username=' + username)
+                    var names = await namesRes.json()
+                    for (var i = 0; i < names.length; i++) {
+                        var opt = document.createElement('option')
+                        opt.value = names[i]
+                        opt.textContent = names[i]
+                        filterSelect.appendChild(opt)
+                    }
+                }
+
+                // 2. Aflæs valgt filter (tom = Privat Billboard)
+                var valgtMixtape = filterSelect.value
+                var url = '/api/mixtape?username=' + username
+                if (valgtMixtape) {
+                    url += '&mixtapeName=' + encodeURIComponent(valgtMixtape)
+                }
+
+                // 3. Hent de faktiske sange
+                var res = await fetch(url)
                 var sange = await res.json()
 
                 // Tom liste — vis "start onboarding" besked
@@ -337,11 +235,11 @@ function spolSang(event) {
                 document.getElementById('ingen-mixtape').classList.add('hidden')
                 document.getElementById('nyt-mixtape-sektion').classList.remove('hidden')
 
-                // Opdater titel med mixtape-navn hvis det findes
-                if (sange[0].mixtape_name) {
-                    document.getElementById('mixtape-titel').textContent = sange[0].mixtape_name
+                // Opdater titel
+                if (valgtMixtape) {
+                    document.getElementById('mixtape-titel').textContent = valgtMixtape
                 } else {
-                    document.getElementById('mixtape-titel').textContent = 'Mit Mixtape'
+                    document.getElementById('mixtape-titel').textContent = 'Privat Billboard'
                 }
 
                 sangeListe = sange  // Gem så afspilSang() kan finde sangene
@@ -361,15 +259,6 @@ function spolSang(event) {
             indsætHeader()
             indsætAfspiller()
             opdaterAvatar()
-
-            document.getElementById('næsteKnap').addEventListener('click', næsteSang)
-
-            document.getElementById('forrigeKnap').addEventListener('click', forrigeSang)
-
-            document.getElementById('spilPauseKnap').addEventListener('click', togglePlayPause)
-
-            document.getElementById('progressBar').addEventListener('click', spolSang)
-
             // Hent og vis billboard som standard
             hentBillboard()
 
@@ -383,6 +272,11 @@ function spolSang(event) {
         // Opdater listen hvis brugeren skifter genre i dropdown-menuen
         document.getElementById('billboard-genre-filter').addEventListener('change', function () {
             hentBillboard()
+        })
+
+        // Opdater listen hvis brugeren skifter mixtape i dropdown-menuen
+        document.getElementById('mixtape-filter').addEventListener('change', function () {
+            hentMixtape()
         })
 
     </script>

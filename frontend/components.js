@@ -105,6 +105,12 @@ function indsætAfspiller() {
         '</div>'
 
     document.body.appendChild(afspiller)
+
+    // Tilføj event listeners til afspillerens knapper
+    document.getElementById('næsteKnap').addEventListener('click', næsteSang)
+    document.getElementById('forrigeKnap').addEventListener('click', forrigeSang)
+    document.getElementById('spilPauseKnap').addEventListener('click', togglePlayPause)
+    document.getElementById('progressBar').addEventListener('click', spolSang)
 }
 
 // Hent username fra URL-parametre
@@ -120,4 +126,106 @@ function opdaterAvatar() {
     if (avatar && user) {
         avatar.textContent = user.charAt(0).toUpperCase()
     }
+}
+
+// ─── AFSPILLER LOGIK ────────────────────────────
+var aktivSangIndex = null
+var progressInterval = null
+var progressProcent = 0
+var spiller = false
+
+// Kaldes når brugeren klikker på et sangkort eller spiler
+function afspilSang(index) {
+    if (typeof sangeListe === 'undefined') return
+    var sang = sangeListe[index]
+    if (!sang) return
+
+    var farve = typeof hentGenreFarve === 'function' ? hentGenreFarve(sang.genre) : 'bg-red-500'
+
+    document.getElementById('afspillerTitel').textContent = sang.title
+    document.getElementById('afspillerKunstner').textContent = sang.artist
+
+    document.getElementById('afspillerBillede').className =
+        'w-16 h-16 md:w-14 md:h-14 rounded-[1.5rem] ' + farve + ' border border-white/20 flex-shrink-0'
+
+    var min = Math.floor(sang.duration_ms / 60000)
+    var sek = String(Math.floor((sang.duration_ms % 60000) / 1000)).padStart(2, '0')
+
+    document.getElementById('totalTid').textContent = min + ':' + sek
+    document.getElementById('nuværendeTid').textContent = '0:00'
+    document.getElementById('progressFill').style.width = '0%'
+
+    document.getElementById('spilPauseKnap').textContent = '⏸'
+
+    aktivSangIndex = index
+    spiller = true
+    startProgress(sang)
+}
+
+// Starter den røde progressbar og opdaterer tiden
+function startProgress(sang) {
+    clearInterval(progressInterval)
+    progressProcent = 0
+
+    progressInterval = setInterval(function () {
+        if (spiller === false) return
+
+        progressProcent += 100 / (sang.duration_ms / 300)
+        document.getElementById('progressFill').style.width = progressProcent + '%'
+
+        var nuTid = sang.duration_ms * progressProcent / 100
+        var min = Math.floor(nuTid / 60000)
+        var sek = Math.floor((nuTid % 60000) / 1000)
+
+        if (sek < 10) {
+            sek = '0' + sek
+        }
+
+        document.getElementById('nuværendeTid').textContent = min + ':' + sek
+
+        if (progressProcent >= 100) {
+            clearInterval(progressInterval)
+            næsteSang()
+        }
+    }, 300)
+}
+
+function næsteSang() {
+    if (aktivSangIndex === null || typeof sangeListe === 'undefined') return
+
+    aktivSangIndex++
+    if (aktivSangIndex >= sangeListe.length) {
+        aktivSangIndex = 0
+    }
+    afspilSang(aktivSangIndex)
+}
+
+function forrigeSang() {
+    if (aktivSangIndex === null || typeof sangeListe === 'undefined') return
+
+    aktivSangIndex--
+    if (aktivSangIndex < 0) {
+        aktivSangIndex = sangeListe.length - 1
+    }
+    afspilSang(aktivSangIndex)
+}
+
+function togglePlayPause() {
+    if (aktivSangIndex === null) return
+
+    if (spiller === true) {
+        spiller = false
+        document.getElementById('spilPauseKnap').textContent = '▶'
+    } else {
+        spiller = true
+        document.getElementById('spilPauseKnap').textContent = '⏸'
+    }
+}
+
+function spolSang(event) {
+    if (aktivSangIndex === null) return
+
+    var bar = document.getElementById('progressBar')
+    progressProcent = event.offsetX / bar.offsetWidth * 100
+    document.getElementById('progressFill').style.width = progressProcent + '%'
 }

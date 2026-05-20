@@ -17,12 +17,49 @@ async function gemBrugerMixtape(username, trackIds, mixtapeName = 'Mit Mixtape')
 
 // her bruger vi hentBrugerMixtape til at hente en brugers mixtape
 // den fungere ved at den tager et brugernavn og returnere en liste over de sang der er i brugerens mixtape
-async function hentBrugerMixtape(username) {
+// Hvis mixtapeName er angivet, henter den kun det ene mixtape.
+// Ellers returnerer den en samlet unik liste over ALLE sange i brugerens mixtapes, sorteret efter deres personlige elo (Privat Billboard)
+async function hentBrugerMixtape(username, mixtapeName) {
+    if (mixtapeName) {
+        // Hent et specifikt mixtape
+        const resultat = await pool.query(
+            `SELECT t.*, um.mixtape_name, ue.elo_score as user_elo_rating 
+             FROM user_mixtapes um 
+             JOIN tracks t ON t.id = um.track_id 
+             LEFT JOIN user_elo ue ON ue.track_id = t.id AND ue.username = um.username
+             WHERE um.username = $1 AND um.mixtape_name = $2`,
+            [username, mixtapeName]
+        );
+        return resultat.rows;
+    } else {
+        // Privat Billboard: Alle unikke sange fra brugerens mixtapes, sorteret efter personlig elo
+        const resultat = await pool.query(
+            `SELECT DISTINCT ON (t.id) t.*, ue.elo_score as user_elo_rating 
+             FROM user_mixtapes um 
+             JOIN tracks t ON t.id = um.track_id 
+             LEFT JOIN user_elo ue ON ue.track_id = t.id AND ue.username = um.username
+             WHERE um.username = $1 
+             ORDER BY t.id, ue.elo_score DESC`,
+            [username]
+        );
+        
+        // PostgreSQL's DISTINCT ON kræver at man sorterer efter det unikke felt først.
+        // Derfor sorterer vi resultatet efter elo i JavaScript bagefter:
+        return resultat.rows.sort((a, b) => {
+            const eloA = a.user_elo_rating || a.elo_rating;
+            const eloB = b.user_elo_rating || b.elo_rating;
+            return eloB - eloA;
+        });
+    }
+}
+
+// Henter en liste af alle unikke mixtape-navne for en bruger
+async function hentBrugerMixtapeNavne(username) {
     const resultat = await pool.query(
-        "SELECT tracks.*, user_mixtapes.mixtape_name FROM user_mixtapes JOIN tracks ON tracks.id = user_mixtapes.track_id WHERE user_mixtapes.username = $1",
+        "SELECT DISTINCT mixtape_name FROM user_mixtapes WHERE username = $1",
         [username]
     );
-    return resultat.rows;
+    return resultat.rows.map(row => row.mixtape_name);
 }
 
 // her kan man nulstille en brugers mixtape og elo ratings
@@ -43,5 +80,6 @@ async function nulstilBruger(username) {
 module.exports = {
     gemBrugerMixtape,
     hentBrugerMixtape,
+    hentBrugerMixtapeNavne,
     nulstilBruger
 };

@@ -21,7 +21,23 @@ async function gemEloTilDatabase(songId, nyElo) {
     );
 }
 
+// her gemmer vi en specifik brugers personlige elo rating for en sang
+// hvis brugeren allerede har en elo for sangen, opdateres den
+async function gemBrugerEloTilDatabase(username, songId, nyElo) {
+    if (!username) return; // Sikkerhed, hvis username ikke er sendt
+    
+    // Neon PostgreSQL understøtter ON CONFLICT DO UPDATE
+    await pool.query(
+        `INSERT INTO user_elo (username, track_id, elo_score) 
+         VALUES ($1, $2, $3) 
+         ON CONFLICT (username, track_id) 
+         DO UPDATE SET elo_score = EXCLUDED.elo_score`,
+        [username, songId, nyElo]
+    );
+}
+
 module.exports = {
     updatereElo,
-    gemEloTilDatabase
+    gemEloTilDatabase,
+    gemBrugerEloTilDatabase
 };

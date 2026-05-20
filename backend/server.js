@@ -3,9 +3,9 @@ const path = require('path');
 const { pool } = require('../db/connect');
 
 // Vi henter vores funktioner fra de separate service-filer
-const { updatereElo, gemEloTilDatabase } = require('./services/eloService');
+const { updatereElo, gemEloTilDatabase, gemBrugerEloTilDatabase } = require('./services/eloService');
 const { hent2PairwiseSange, hentOnboardingSange, hentBillboard } = require('./services/recommendationService');
-const { gemBrugerMixtape, hentBrugerMixtape, nulstilBruger } = require('./services/mixtapeService');
+const { gemBrugerMixtape, hentBrugerMixtape, hentBrugerMixtapeNavne, nulstilBruger } = require('./services/mixtapeService');
 const { fletMixtapes } = require('./services/mergeService');
 const { hentNæsteSangFraMixtape } = require('./services/queueService');
 
@@ -52,7 +52,7 @@ app.get('/api/pair', async function (req, res) {
 // og det fungere ved at det tager elo rating for de to sange og opdaterer dem baseret på resultatet
 app.post('/api/vote', async function (req, res) {
     try {
-        const { winner_id, loser_id, winner_elo, loser_elo } = req.body;
+        const { winner_id, loser_id, winner_elo, loser_elo, username } = req.body;
 
         // Simpel validering — alle fire felter skal være til stede
         if (!winner_id || !loser_id || winner_elo === undefined || loser_elo === undefined) {
@@ -64,6 +64,12 @@ app.post('/api/vote', async function (req, res) {
 
         await gemEloTilDatabase(winner_id, nyVinderRating);
         await gemEloTilDatabase(loser_id, nyTaberRating);
+
+        // Hvis vi har et brugernavn, opdaterer vi også den personlige elo-rating
+        if (username) {
+            await gemBrugerEloTilDatabase(username, winner_id, nyVinderRating);
+            await gemBrugerEloTilDatabase(username, loser_id, nyTaberRating);
+        }
 
         res.json({ success: true, nyVinderRating: nyVinderRating, nyTaberRating: nyTaberRating });
     } catch (err) {
@@ -122,14 +128,27 @@ app.post('/api/mixtape', async function (req, res) {
 
 // ROUTE 7: Hent mixtape (GET)
 // her bruger vi hentBrugerMixtape fra mixtapeService.js til at hente mixtape
-// det fungere ved at det tager et brugernavn og returnere en liste over track id'er der er gemt i databasen
 app.get('/api/mixtape', async function (req, res) {
     try {
         const username = req.query.username;
-        const mixtape = await hentBrugerMixtape(username);
+        const mixtapeName = req.query.mixtapeName; // Kan være tom
+        const mixtape = await hentBrugerMixtape(username, mixtapeName);
         res.json(mixtape);
     } catch (err) {
         res.status(500).json({ error: "Kunne ikke hente mixtape" });
+    }
+});
+
+// ROUTE 7.5: Hent en brugers mixtape-navne (GET)
+app.get('/api/mixtapes', async function (req, res) {
+    try {
+        const username = req.query.username;
+        if (!username) return res.status(400).json({ error: "username er påkrævet" });
+        
+        const mixtapes = await hentBrugerMixtapeNavne(username);
+        res.json(mixtapes);
+    } catch (err) {
+        res.status(500).json({ error: "Kunne ikke hente mixtape-navne" });
     }
 });
 
