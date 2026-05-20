@@ -84,26 +84,31 @@
                     <div id="sang-a-wildcard"
                         class="hidden absolute -top-3 right-2 bg-red-500 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide shadow-md z-10">
                         Wildcard</div>
-                    <div id="sang-a" onclick="stemPå(0)" class="h-full rounded-2xl p-6 cursor-pointer border border-white/10 bg-white/5
+                    <div id="sang-a" onclick="stemPå(0)"
+                        class="h-full rounded-2xl p-6 cursor-pointer border border-white/10 bg-white/5
                             hover:bg-white/10 hover:border-white/20 transition-colors text-center overflow-hidden flex flex-col justify-center">
                         <div id="sang-a-farve"
-                            class="w-16 h-16 rounded-xl mx-auto mb-4 border-[3px] border-zinc-700 bg-transparent flex-shrink-0"></div>
+                            class="w-16 h-16 rounded-xl mx-auto mb-4 border-[3px] border-zinc-700 bg-transparent flex-shrink-0">
+                        </div>
                         <p id="sang-a-titel" class="font-semibold text-sm truncate w-full" title="Titel">—</p>
                         <p id="sang-a-artist" class="text-xs text-zinc-400 mt-1 truncate w-full" title="Artist">—</p>
                         <p id="sang-a-elo-rating" class="text-xs text-zinc-400 mt-1 truncate w-full">—</p>
                     </div>
                 </div>
-                <div class="flex items-center justify-center text-zinc-600 font-bold text-lg flex-shrink-0 px-2">vs</div>
+                <div class="flex items-center justify-center text-zinc-600 font-bold text-lg flex-shrink-0 px-2">vs
+                </div>
                 <!-- SANG B -->
                 <div class="relative flex-1 min-w-0">
                     <div id="sang-b-floating-elo" class="hidden"></div>
                     <div id="sang-b-wildcard"
                         class="hidden absolute -top-3 right-2 bg-red-500 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide shadow-md z-10">
                         Wildcard</div>
-                    <div id="sang-b" onclick="stemPå(1)" class="h-full rounded-2xl p-6 cursor-pointer border border-white/10 bg-white/5
+                    <div id="sang-b" onclick="stemPå(1)"
+                        class="h-full rounded-2xl p-6 cursor-pointer border border-white/10 bg-white/5
                             hover:bg-white/10 hover:border-white/20 transition-colors text-center overflow-hidden flex flex-col justify-center">
                         <div id="sang-b-farve"
-                            class="w-16 h-16 rounded-xl mx-auto mb-4 border-[3px] border-zinc-700 bg-transparent flex-shrink-0"></div>
+                            class="w-16 h-16 rounded-xl mx-auto mb-4 border-[3px] border-zinc-700 bg-transparent flex-shrink-0">
+                        </div>
                         <p id="sang-b-titel" class="font-semibold text-sm truncate w-full" title="Titel">—</p>
                         <p id="sang-b-artist" class="text-xs text-zinc-400 mt-1 truncate w-full" title="Artist">—</p>
                         <p id="sang-b-elo-rating" class="text-xs text-zinc-400 mt-1 truncate w-full">—</p>
@@ -150,7 +155,7 @@
             // Ligesom backend har req.query, kan vi læse URL'en i browseren via URLSearchParams
             const params = new URLSearchParams(window.location.search)
             const urlUser = params.get('username')
-            
+
             // Hvis vi allerede kender navnet, låser vi feltet, så brugeren ikke skal skrive det igen
             if (urlUser) {
                 const nameInput = document.getElementById('username-input')
@@ -180,7 +185,7 @@
         function toggleGenre(knap) {
             const genre = knap.dataset.genre       // Aflæser 'data-genre' fra HTML (fx "pop")
             const aktivFarve = knap.dataset.farve  // Aflæser 'data-farve' fra HTML (fx "bg-pink-500")
-            
+
             // indexOf leder efter genren i vores liste. Hvis den IKKE findes, returnerer den -1.
             const index = valgteGenrer.indexOf(genre)
 
@@ -217,7 +222,7 @@
 
             // JOIN konverterer vores liste ['pop', 'rock'] til en tekststreng "pop,rock"
             const genreParam = valgteGenrer.join(',')
-            
+
             // 'await fetch' = Stop koden! Vent til tjeneren (backend) kommer tilbage med maden (sangene).
             const res = await fetch('/api/onboarding?genres=' + genreParam + '&total=10')
             onboardingSange = await res.json() // Konverter maden til et JavaScript array
@@ -266,11 +271,11 @@
 
             let sangA
             let sangB
-            
+
             // Separer normale fra wildcards
             const normaleSange = []
             const wildcards = []
-            
+
             for (let i = 0; i < tilgængelige.length; i++) {
                 if (tilgængelige[i].is_wildcard) {
                     wildcards.push(tilgængelige[i])
@@ -278,16 +283,16 @@
                     normaleSange.push(tilgængelige[i])
                 }
             }
-            
+
             // Strategi: Kun på runde 5, 10, 15 skal wildcards være med
             const erWildcardRunde = (rundeNummer === 4 || rundeNummer === 9 || rundeNummer === 14)
-            
+
             if (erWildcardRunde && wildcards.length > 0 && normaleSange.length > 0) {
                 // Wildcard-duel: 1 wildcard + 1 NORMAL sang (ALDRIG wildcard vs wildcard)
                 // Math.random() giver et tal mellem 0 og 0.99. Gange med length giver et random array-index.
                 const randomWildcardIndex = Math.floor(Math.random() * wildcards.length)
                 sangA = wildcards[randomWildcardIndex]
-                
+
                 const randomNormalIndex = Math.floor(Math.random() * normaleSange.length)
                 sangB = normaleSange[randomNormalIndex]
             } else {
@@ -295,7 +300,7 @@
                 const indexA = Math.floor(Math.random() * tilgængelige.length)
                 sangA = tilgængelige[indexA]
                 tilgængelige.splice(indexA, 1) // Fjern A så den ikke bliver valgt igen
-                
+
                 const indexB = Math.floor(Math.random() * tilgængelige.length)
                 sangB = tilgængelige[indexB]
             }
@@ -388,14 +393,14 @@
             // Find feedback elementer i HTML
             const aFloating = document.getElementById('sang-a-floating-elo')
             const bFloating = document.getElementById('sang-b-floating-elo')
-            
+
             const vinderFloating = valg === 0 ? aFloating : bFloating
             const taberFloating = valg === 0 ? bFloating : aFloating
 
             // Opsæt vinder feedback
             vinderFloating.textContent = '+' + vinderDelta
             vinderFloating.className = 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-5xl font-black text-green-400 z-20 drop-shadow-[0_0_15px_rgba(74,222,128,0.8)] pointer-events-none transition-all duration-300 scale-125'
-            
+
             // Opsæt taber feedback
             taberFloating.textContent = taberDelta
             taberFloating.className = 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-3xl font-bold text-red-500 z-20 drop-shadow-[0_0_10px_rgba(248,113,113,0.8)] pointer-events-none transition-all duration-300 scale-90 opacity-80'
@@ -469,7 +474,7 @@
         // ─── GEM MIXTAPE OG GÅ VIDERE ────────────────────
         async function gemMixtapeOgGåVidere() {
             const mixtapeNavn = document.getElementById('mixtape-name-input').value.trim()
-            
+
             if (mixtapeNavn === '') {
                 alert('Du skal give dit mixtape et navn!')
                 return
