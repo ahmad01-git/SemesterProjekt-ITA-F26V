@@ -6,11 +6,16 @@ const path = require('path')
 
 async function createTables() {
   try {
-    // Vi sletter tabellerne først så vi starter helt forfra hver gang
+    // Tænk på databasen som et enormt, blankt lærred.
+    // For at undgå at gemme gamle fejl, sletter vi ('DROP') alle vores tabeller, før vi bygger dem igen.
+    // CASCADE betyder, at hvis noget hænger sammen (f.eks. sange i et mixtape), sletter vi det hele uden brok.
     await pool.query('DROP TABLE IF EXISTS tracks CASCADE')
     await pool.query('DROP TABLE IF EXISTS user_mixtapes CASCADE')
     await pool.query('DROP TABLE IF EXISTS user_elo CASCADE')
-    //bruger tracks er en tabel der viser sange der er tilføjet til en brugers mixtape,
+
+    // 1. TRACKS TABELLEN
+    // Dette er vores bibliotek! Ligesom på et fysisk bibliotek har hver bog (sang) et unikt id.
+    // Her gemmer vi alle de rå detaljer om sangen: titel, kunstner, genre og en basis 'elo_rating'.
     await pool.query(`
       CREATE TABLE IF NOT EXISTS tracks (
         id            SERIAL PRIMARY KEY,
@@ -26,8 +31,12 @@ async function createTables() {
         tempo         DECIMAL(6,3),
         elo_rating    INTEGER DEFAULT 1000
       )
-    `)
-    //bruger mixtapes som en tabel der viser sange der er tilføjet til en brugers mixtape,
+    `);
+
+    // 2. USER_MIXTAPES TABELLEN
+    // Denne tabel er relations-tabellen! Den forbinder en bestemt bruger (username) med en sang (track_id).
+    // Vi bruger 'REFERENCES tracks(id)', hvilket er en sikkerhedsnet-regel (Foreign Key):
+    // Man kan ikke tilføje en sang til sit mixtape, hvis sangen ikke findes i Tracks-tabellen.
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_mixtapes (
         id          SERIAL PRIMARY KEY,
@@ -36,8 +45,12 @@ async function createTables() {
         mixtape_name VARCHAR(255) DEFAULT 'Mit Mixtape',
         added_at    TIMESTAMP DEFAULT NOW()
       )
-    `)
-    //bruger elo rating, er en tabel der viser sange med elo rating, den er god til at vise hvor mange der har stemt på en sang.
+    `);
+
+    // 3. USER_ELO TABELLEN
+    // Global Elo er god til at vise, hvad *verden* kan lide. 
+    // Men denne tabel gemmer DIN personlige Elo-rating for en sang.
+    // PRIMARY KEY (username, track_id) betyder: En bruger kan kun have én unik elo-score for én bestemt sang.
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_elo (
         username    VARCHAR(100),
@@ -101,10 +114,14 @@ async function importTracks() {
         console.log('Starter indsættelse i databasen (dette kan tage et øjeblik da vi tager det hele)...')
 
         let count = 0
-        // Vi fjerner limit, så vi får ALT ind først, så vi kan finde de bedste sange på tværs af hele filen
+        // Vi går igennem listen af sange én ad gangen.
+        // Hvorfor parseInt? CSV-filer returnerer altid alting som tekst-strenge ("100"), 
+        // så vi konverterer dem til tal (100) for at databasen kan forstå dem matematik-mæssigt.
         for (let i = 0; i < results.length; i++) {
           const sang = results[i]
           const pop = parseInt(sang.popularity) || 0
+          
+          // Formel: Vi giver sange et forspring baseret på deres popularitet, så en "god" sang starter lidt højere.
           const startElo = 1000 + (pop * 5)
 
           try {
@@ -129,12 +146,12 @@ async function importTracks() {
             ])
             count++
 
-            // Vis fremskridt for hver 5000. sang så brugeren ikke tror den er gået i stå
+            // Giver terminal-feedback så vi ved, at koden stadig kører og ikke er crashet.
             if (count % 5000 === 0) {
               console.log(`Indsat ${count} sange...`)
             }
           } catch (err) {
-            // Vi logger ikke alle fejl for at undgå at fylde terminalen
+            // Hvis én sang driller, catcher vi fejlen her, så hele loopet ikke dør.
           }
         }
 

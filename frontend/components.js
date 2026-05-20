@@ -1,6 +1,8 @@
-// Indsætter header øverst i body
+// Indsætter header øverst i body. 
+// At bygge HTML i JavaScript (DOM Manipulation) er smart, fordi vi kun skal rette koden ét sted,
+// og så opdateres headeren automatisk på BÅDE onboarding.html og billboard.html.
 function indsætHeader() {
-    var header = document.createElement('header')
+    const header = document.createElement('header')
     header.className = 'sticky top-0 left-0 w-full z-50 flex items-center justify-between border-b border-white/10 bg-zinc-950/80 px-8 py-4 backdrop-blur-xl'
     header.innerHTML =
         '<div class="flex-1 flex justify-start">' +
@@ -40,9 +42,9 @@ function indsætHeader() {
 
     document.body.insertBefore(header, document.body.firstChild)
 
-    // Skjul søgefeltet på onboarding-siden
+    // Skjul søgefeltet på onboarding-siden (vi vil ikke lade brugeren søge mens de stemmer)
     if (window.location.pathname.includes('onboarding.html')) {
-        var soegefelt = document.getElementById('header-søgefelt-container')
+        const soegefelt = document.getElementById('header-søgefelt-container')
         if (soegefelt) {
             soegefelt.classList.add('hidden')
         }
@@ -51,8 +53,8 @@ function indsætHeader() {
 
 // Navigerer til Billboard-viewet
 function gåTilBillboard() {
-    var user = getCurrentUser()
-    // Hvis vi allerede er på billboard.html — skift bare view
+    const user = getCurrentUser()
+    // Hvis vi allerede er på billboard.html — skift bare kassen der vises (SPA logik)
     if (window.location.pathname.includes('billboard.html')) {
         if (typeof skiftView === 'function') {
             skiftView('billboard')
@@ -64,8 +66,7 @@ function gåTilBillboard() {
 
 // Navigerer til Mixtape-viewet
 function gåTilMixtape() {
-    var user = getCurrentUser()
-    // Hvis vi allerede er på billboard.html — skift bare view
+    const user = getCurrentUser()
     if (window.location.pathname.includes('billboard.html')) {
         if (typeof skiftView === 'function') {
             skiftView('mixtape')
@@ -77,7 +78,7 @@ function gåTilMixtape() {
 
 // Indsætter afspiller i bunden af siden
 function indsætAfspiller() {
-    var afspiller = document.createElement('div')
+    const afspiller = document.createElement('div')
     afspiller.className = 'fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-[1200px] bg-zinc-900/80 backdrop-blur-xl rounded-[2rem] px-5 py-4 md:px-12 flex flex-col md:flex-row items-center justify-between border border-white/10 shadow-[0_40px_60px_rgba(0,0,0,0.5)] z-[100] gap-4 md:gap-0'
     afspiller.innerHTML =
         '<div class="flex items-center gap-4 md:gap-8 w-full md:w-[30%]">' +
@@ -113,34 +114,37 @@ function indsætAfspiller() {
     document.getElementById('progressBar').addEventListener('click', spolSang)
 }
 
-// Hent username fra URL-parametre
+// Hent username fra URL-parametre (?username=casper)
 function getCurrentUser() {
-    var params = new URLSearchParams(window.location.search)
+    const params = new URLSearchParams(window.location.search)
     return params.get('username') || ''
 }
 
-// Opdater avatar-cirklen med brugerens forbogstav
+// Opdater avatar-cirklen (rød cirkel i hjørnet) med brugerens forbogstav
 function opdaterAvatar() {
-    var user = getCurrentUser()
-    var avatar = document.getElementById('bruger-avatar')
+    const user = getCurrentUser()
+    const avatar = document.getElementById('bruger-avatar')
     if (avatar && user) {
         avatar.textContent = user.charAt(0).toUpperCase()
     }
 }
 
 // ─── AFSPILLER LOGIK ────────────────────────────
-var aktivSangIndex = null
-var progressInterval = null
-var progressProcent = 0
-var spiller = false
+// Vores "fake" musikafspiller. Den spiller ikke rigtig lyd, men den simulerer
+// fuldstændig hvordan en rigtig Spotify afspiller ville virke visuelt.
+let aktivSangIndex = null
+let progressInterval = null
+let progressProcent = 0
+let spiller = false
 
 // Kaldes når brugeren klikker på et sangkort eller spiler
 function afspilSang(index) {
     if (typeof sangeListe === 'undefined') return
-    var sang = sangeListe[index]
+    const sang = sangeListe[index]
     if (!sang) return
 
-    var farve = typeof hentGenreFarve === 'function' ? hentGenreFarve(sang.genre) : 'bg-red-500'
+    // Hent farven dynamisk
+    const farve = typeof hentGenreFarve === 'function' ? hentGenreFarve(sang.genre) : 'bg-red-500'
 
     document.getElementById('afspillerTitel').textContent = sang.title
     document.getElementById('afspillerKunstner').textContent = sang.artist
@@ -148,8 +152,8 @@ function afspilSang(index) {
     document.getElementById('afspillerBillede').className =
         'w-16 h-16 md:w-14 md:h-14 rounded-[1.5rem] ' + farve + ' border border-white/20 flex-shrink-0'
 
-    var min = Math.floor(sang.duration_ms / 60000)
-    var sek = String(Math.floor((sang.duration_ms % 60000) / 1000)).padStart(2, '0')
+    const min = Math.floor(sang.duration_ms / 60000)
+    const sek = String(Math.floor((sang.duration_ms % 60000) / 1000)).padStart(2, '0')
 
     document.getElementById('totalTid').textContent = min + ':' + sek
     document.getElementById('nuværendeTid').textContent = '0:00'
@@ -163,6 +167,7 @@ function afspilSang(index) {
 }
 
 // Starter den røde progressbar og opdaterer tiden
+// Bruger setInterval til at køre koden hver 300 millisekund, så stregen bevæger sig glidende.
 function startProgress(sang) {
     clearInterval(progressInterval)
     progressProcent = 0
@@ -173,9 +178,9 @@ function startProgress(sang) {
         progressProcent += 100 / (sang.duration_ms / 300)
         document.getElementById('progressFill').style.width = progressProcent + '%'
 
-        var nuTid = sang.duration_ms * progressProcent / 100
-        var min = Math.floor(nuTid / 60000)
-        var sek = Math.floor((nuTid % 60000) / 1000)
+        const nuTid = sang.duration_ms * progressProcent / 100
+        const min = Math.floor(nuTid / 60000)
+        let sek = Math.floor((nuTid % 60000) / 1000)
 
         if (sek < 10) {
             sek = '0' + sek
@@ -225,7 +230,7 @@ function togglePlayPause() {
 function spolSang(event) {
     if (aktivSangIndex === null) return
 
-    var bar = document.getElementById('progressBar')
+    const bar = document.getElementById('progressBar')
     progressProcent = event.offsetX / bar.offsetWidth * 100
     document.getElementById('progressFill').style.width = progressProcent + '%'
 }

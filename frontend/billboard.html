@@ -65,7 +65,7 @@
             <div id="ingen-mixtape" class="hidden text-center py-16">
                 <p class="text-zinc-400 mb-2">Du har ikke lavet et mixtape endnu.</p>
                 <p class="text-zinc-600 text-sm mb-6">Gå igennem onboarding for at bygge din første liste.</p>
-                <button onclick="window.location.href='onboarding.html'"
+                <button onclick="window.location.href='onboarding.html?username=' + getCurrentUser()"
                     class="bg-red-500 hover:bg-red-600 transition-colors rounded-xl px-6 py-3 text-sm font-semibold">
                     Start onboarding →
                 </button>
@@ -77,7 +77,7 @@
             <!-- Knap til at lave et nyt mixtape — vises altid i bunden af mixtape-viewet -->
             <div id="nyt-mixtape-sektion" class="hidden mt-8 pt-6 border-t border-white/10 text-center">
                 <p class="text-zinc-500 text-sm mb-4">Vil du lave et nyt mixtape?</p>
-                <button onclick="window.location.href='onboarding.html'"
+                <button onclick="window.location.href='onboarding.html?username=' + getCurrentUser()"
                     class="bg-white/10 hover:bg-white/20 transition-colors rounded-xl px-6 py-3 text-sm font-semibold">
                     Start ny onboarding →
                 </button>
@@ -91,18 +91,19 @@
 
     <script>
         // ─── GLOBAL SANGELISTE ──────────────────────────
-        // Gemmer de sange der vises, så afspilSang() kan finde den rigtige sang via index
-        var sangeListe = []
+        // Vi gemmer de sange der aktuelt vises på skærmen (enten Billboard eller Mixtape) i denne variabel.
+        // Hvorfor? Så vores afspiller ('components.js') kan slå sangene op og vide, hvad der skal spilles.
+        let sangeListe = []
 
 
         // ─── GENREFARVE ─────────────────────────────────
-        // Returnerer en Tailwind baggrundsfarveklasse baseret på genre.
-        // De 5 kendte genrer får faste farver.
-        // Ukendte genrer får en konsistent farve baseret på genrenavnets bogstaver (hash).
+        // En lille sjov hjælpefunktion, der giver hver genre sin egen farve.
+        // David Malan ville elske dette: Det er et klassisk 'Hash Function' trick!
         function hentGenreFarve(genre) {
-            if (!genre) return 'bg-zinc-500'
+            if (!genre) return 'bg-zinc-500' // Default farve
 
-            var kendte = {
+            // Et "Dictionary" til de mest kendte genrer
+            const kendte = {
                 'rock': 'bg-red-500',
                 'pop': 'bg-pink-500',
                 'hip-hop': 'bg-green-500',
@@ -110,44 +111,49 @@
                 'jazz': 'bg-amber-500'
             }
 
-            var genreLower = genre.toLowerCase()
+            const genreLower = genre.toLowerCase()
             if (kendte[genreLower]) return kendte[genreLower]
 
-            // Vi lægger bogstavernes tal (charCode) sammen og bruger modulo
-            // for at vælge en konsistent farve til ukendte genrer
-            var ekstraFarver = ['bg-cyan-500', 'bg-orange-500', 'bg-teal-500', 'bg-indigo-500', 'bg-rose-400', 'bg-lime-500']
-            var sum = 0
-            for (var i = 0; i < genre.length; i++) {
+            // Hash Function Trick: 
+            // Hvis vi får en "ukendt" genre (fx 'classical'), vil vi stadig gerne have at den 
+            // KONSEKVENT får den samme farve hver gang vi ser den.
+            // Vi lægger bogstavernes talværdier (ASCII) sammen og bruger 'modulo' (%).
+            const ekstraFarver = ['bg-cyan-500', 'bg-orange-500', 'bg-teal-500', 'bg-indigo-500', 'bg-rose-400', 'bg-lime-500']
+            let sum = 0
+            for (let i = 0; i < genre.length; i++) {
                 sum += genre.charCodeAt(i)
             }
             return ekstraFarver[sum % ekstraFarver.length]
         }
 
-        // ─── VIEW NAVIGATION ────────────────────────────
-        // Skifter mellem de to views: 'billboard' og 'mixtape'
+        // ─── VIEW NAVIGATION (SPA LOGIK) ────────────────────────────
+        // Dette er hjertet af en "Single Page Application" (SPA).
+        // I stedet for at reloade siden, gemmer vi bare en kasse (Billboard) og viser en anden (Mixtape).
         function skiftView(viewNavn) {
-            var alleViews = document.querySelectorAll('.view')
-            for (var i = 0; i < alleViews.length; i++) {
+            const alleViews = document.querySelectorAll('.view')
+            for (let i = 0; i < alleViews.length; i++) {
                 alleViews[i].classList.add('hidden')
             }
             document.getElementById('view-' + viewNavn).classList.remove('hidden')
 
-            // Hent brugerens mixtape når det viewet åbnes
+            // Hvis brugeren åbner Mixtape-viewet, skal vi bede backend om data.
             if (viewNavn === 'mixtape') {
                 hentMixtape()
             }
         }
 
-        // ─── SANGKORT ───────────────────────────────────
-        // Bygger HTML for ét sangkort og returnerer det som en tekststreng.
-        // onclick kalder afspilSang() med sangens index i sangeListe.
+        // ─── SANGKORT COMPONENT ───────────────────────────────────
+        // Bygger HTML for ét enkelt "Sangkort". Tænk på det som en fabrik (Factory).
+        // Returnerer en gigantisk tekst-streng fyldt med HTML og CSS.
         function sangKort(sang, nummer) {
-            var min = Math.floor(sang.duration_ms / 60000)
-            var sek = String(Math.floor((sang.duration_ms % 60000) / 1000)).padStart(2, '0')
+            // Matematik: Omregn millisekunder til minutter og sekunder
+            const min = Math.floor(sang.duration_ms / 60000)
+            const sek = String(Math.floor((sang.duration_ms % 60000) / 1000)).padStart(2, '0')
 
-            var farve = hentGenreFarve(sang.genre)
-            var index = nummer - 1  // index er 0-baseret, nummer er 1-baseret
+            const farve = hentGenreFarve(sang.genre)
+            const index = nummer - 1  // Computer starter på 0 (index), mennesker starter på 1 (nummer)
 
+            // VIGTIGT: onclick="afspilSang(index)" forbinder knappen med vores globale afspiller!
             return '<div onclick="afspilSang(' + index + ')" class="flex items-center gap-6 px-4 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer">' +
                 '<span class="text-white text-center w-6 font-medium">' + nummer + '</span>' +
                 '<div class="w-12 h-12 rounded-xl ' + farve + ' flex-shrink-0 opacity-80"></div>' +
@@ -162,35 +168,36 @@
 
 
         // ─── BILLBOARD ──────────────────────────────────
-        // Henter og viser den globale top 20 liste — kan filtreres på genre
+        // Henter og viser den globale top 20 liste
         async function hentBillboard() {
             try {
-                var genre = document.getElementById('billboard-genre-filter').value
-                var url = genre ? '/api/billboard?genre=' + genre : '/api/billboard'
+                const genre = document.getElementById('billboard-genre-filter').value
+                const url = genre ? '/api/billboard?genre=' + genre : '/api/billboard'
 
-                var response = await fetch(url)
-                var sange = await response.json()
+                const response = await fetch(url)
+                const sange = await response.json()
 
-                sangeListe = sange  // Gem så afspilSang() kan finde sangene
+                sangeListe = sange  // Gem så afspilSang() ved hvad der er på skærmen nu
 
-                var container = document.getElementById('billboard-liste')
-                container.innerHTML = ''
+                const container = document.getElementById('billboard-liste')
+                container.innerHTML = '' // Tøm listen før vi bygger den op igen (forhindrer duplikater)
 
-                for (var i = 0; i < sange.length; i++) {
+                for (let i = 0; i < sange.length; i++) {
                     container.innerHTML += sangKort(sange[i], i + 1)
                 }
             } catch (error) {
                 console.error("Fejl ved hentning af billboard:", error)
+                alert("Kunne ikke forbinde til databasen. Er serveren tændt?")
             }
         }
 
         // ─── MIXTAPE ────────────────────────────────────
-        // Henter brugerens mixtape og viser det.
-        // Viser onboarding-link hvis brugeren ikke har et mixtape.
+        // Henter brugerens mixtape. Lidt mere kompliceret end Billboard,
+        // fordi vi også skal hente dropdown-menuen (alle brugerens mixtapes).
         async function hentMixtape() {
-            var username = getCurrentUser()
+            const username = getCurrentUser()
 
-            // Ingen bruger — vis "start onboarding" besked
+            // Hvis ingen er logget ind (mangler ?username i URL), vis en fejlbesked
             if (!username) {
                 document.getElementById('ingen-mixtape').classList.remove('hidden')
                 document.getElementById('mixtape-liste').innerHTML = ''
@@ -199,31 +206,45 @@
             }
 
             try {
-                // 1. Hent mixtape-listen (dropdown muligheder) hvis ikke allerede hentet
-                var filterSelect = document.getElementById('mixtape-filter')
-                if (filterSelect.options.length <= 1) {
-                    var namesRes = await fetch('/api/mixtapes?username=' + username)
-                    var names = await namesRes.json()
-                    for (var i = 0; i < names.length; i++) {
-                        var opt = document.createElement('option')
-                        opt.value = names[i]
-                        opt.textContent = names[i]
-                        filterSelect.appendChild(opt)
-                    }
+                // 1. Byg Dropdown-menuen over alle brugerens mixtapes
+                const filterSelect = document.getElementById('mixtape-filter')
+                const nuværendeValg = filterSelect.value
+                
+                filterSelect.innerHTML = '<option value="">Privat Billboard (Alle)</option>'
+
+                const namesRes = await fetch('/api/mixtapes?username=' + username)
+                const names = await namesRes.json()
+                for (let i = 0; i < names.length; i++) {
+                    const opt = document.createElement('option')
+                    opt.value = names[i]
+                    opt.textContent = names[i]
+                    filterSelect.appendChild(opt)
                 }
 
-                // 2. Aflæs valgt filter (tom = Privat Billboard)
-                var valgtMixtape = filterSelect.value
-                var url = '/api/mixtape?username=' + username
+                // 2. Auto-vælg mixtape, hvis brugeren lige kommer direkte fra Onboarding siden (via URL)
+                const params = new URLSearchParams(window.location.search)
+                const urlMixtape = params.get('mixtapeName')
+                
+                if (urlMixtape && !nuværendeValg) {
+                    filterSelect.value = urlMixtape
+                    // Clean-up: Fjern parameret fra URL'en, så den ikke bliver hængende
+                    window.history.replaceState({}, document.title, window.location.pathname + '?username=' + username + '&view=mixtape')
+                } else if (nuværendeValg) {
+                    filterSelect.value = nuværendeValg
+                }
+
+                // 3. Hvilket mixtape valgte brugeren? (tom = Privat Billboard)
+                const valgtMixtape = filterSelect.value
+                let url = '/api/mixtape?username=' + username
                 if (valgtMixtape) {
-                    url += '&mixtapeName=' + encodeURIComponent(valgtMixtape)
+                    url += '&mixtapeName=' + encodeURIComponent(valgtMixtape) // encodeURIComponent sikrer at navne med mellemrum (fx "Rock 1") ikke ødelægger URL'en.
                 }
 
-                // 3. Hent de faktiske sange
-                var res = await fetch(url)
-                var sange = await res.json()
+                // 4. Hent sangene!
+                const res = await fetch(url)
+                const sange = await res.json()
 
-                // Tom liste — vis "start onboarding" besked
+                // Hvis brugeren aldrig har lavet et mixtape, viser vi "Start Onboarding" kassen.
                 if (!sange || sange.length === 0) {
                     document.getElementById('ingen-mixtape').classList.remove('hidden')
                     document.getElementById('mixtape-liste').innerHTML = ''
@@ -231,22 +252,22 @@
                     return
                 }
 
-                // Skjul "ingen mixtape" og vis sangene
+                // Skjul "ingen mixtape" kassen og vis sang-sektionen
                 document.getElementById('ingen-mixtape').classList.add('hidden')
                 document.getElementById('nyt-mixtape-sektion').classList.remove('hidden')
 
-                // Opdater titel
+                // Opdater den store titeltekst øverst oppe
                 if (valgtMixtape) {
                     document.getElementById('mixtape-titel').textContent = valgtMixtape
                 } else {
                     document.getElementById('mixtape-titel').textContent = 'Privat Billboard'
                 }
 
-                sangeListe = sange  // Gem så afspilSang() kan finde sangene
+                sangeListe = sange  // Gem til den globale afspiller
 
-                var container = document.getElementById('mixtape-liste')
+                const container = document.getElementById('mixtape-liste')
                 container.innerHTML = ''
-                for (var i = 0; i < sange.length; i++) {
+                for (let i = 0; i < sange.length; i++) {
                     container.innerHTML += sangKort(sange[i], i + 1)
                 }
             } catch (error) {
@@ -254,7 +275,7 @@
             }
         }
 
-        // ─── START APPLIKATIONEN ────────────────────────
+        // ─── START APPLIKATIONEN (ENTRY POINT) ────────────────────────
         document.addEventListener('DOMContentLoaded', function () {
             indsætHeader()
             indsætAfspiller()
@@ -263,7 +284,7 @@
             hentBillboard()
 
             // Tjek om URL har ?view=mixtape — bruges når man redirectes fra onboarding
-            var params = new URLSearchParams(window.location.search)
+            const params = new URLSearchParams(window.location.search)
             if (params.get('view') === 'mixtape') {
                 skiftView('mixtape')
             }

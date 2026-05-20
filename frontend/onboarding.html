@@ -79,32 +79,34 @@
             <p class="text-center text-zinc-400 text-sm mb-6">Hvilken sang passer bedst lige nu?</p>
             <div class="flex gap-4 mb-6 pt-4">
                 <!-- SANG A -->
-                <div class="relative flex-1">
+                <div class="relative flex-1 min-w-0">
+                    <div id="sang-a-floating-elo" class="hidden"></div>
                     <div id="sang-a-wildcard"
                         class="hidden absolute -top-3 right-2 bg-red-500 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide shadow-md z-10">
                         Wildcard</div>
                     <div id="sang-a" onclick="stemPå(0)" class="h-full rounded-2xl p-6 cursor-pointer border border-white/10 bg-white/5
-                            hover:bg-white/10 hover:border-white/20 transition-colors text-center overflow-hidden">
+                            hover:bg-white/10 hover:border-white/20 transition-colors text-center overflow-hidden flex flex-col justify-center">
                         <div id="sang-a-farve"
-                            class="w-16 h-16 rounded-xl mx-auto mb-4 border-[3px] border-zinc-700 bg-transparent"></div>
-                        <p id="sang-a-titel" class="font-semibold text-sm truncate">—</p>
-                        <p id="sang-a-artist" class="text-xs text-zinc-400 mt-1 truncate">—</p>
-                        <p id="sang-a-elo-rating" class="text-xs text-zinc-400 mt-1 truncate">—</p>
+                            class="w-16 h-16 rounded-xl mx-auto mb-4 border-[3px] border-zinc-700 bg-transparent flex-shrink-0"></div>
+                        <p id="sang-a-titel" class="font-semibold text-sm truncate w-full" title="Titel">—</p>
+                        <p id="sang-a-artist" class="text-xs text-zinc-400 mt-1 truncate w-full" title="Artist">—</p>
+                        <p id="sang-a-elo-rating" class="text-xs text-zinc-400 mt-1 truncate w-full">—</p>
                     </div>
                 </div>
-                <div class="flex items-center justify-center text-zinc-600 font-bold text-lg">vs</div>
+                <div class="flex items-center justify-center text-zinc-600 font-bold text-lg flex-shrink-0 px-2">vs</div>
                 <!-- SANG B -->
-                <div class="relative flex-1">
+                <div class="relative flex-1 min-w-0">
+                    <div id="sang-b-floating-elo" class="hidden"></div>
                     <div id="sang-b-wildcard"
                         class="hidden absolute -top-3 right-2 bg-red-500 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wide shadow-md z-10">
                         Wildcard</div>
                     <div id="sang-b" onclick="stemPå(1)" class="h-full rounded-2xl p-6 cursor-pointer border border-white/10 bg-white/5
-                            hover:bg-white/10 hover:border-white/20 transition-colors text-center overflow-hidden">
+                            hover:bg-white/10 hover:border-white/20 transition-colors text-center overflow-hidden flex flex-col justify-center">
                         <div id="sang-b-farve"
-                            class="w-16 h-16 rounded-xl mx-auto mb-4 border-[3px] border-zinc-700 bg-transparent"></div>
-                        <p id="sang-b-titel" class="font-semibold text-sm truncate">—</p>
-                        <p id="sang-b-artist" class="text-xs text-zinc-400 mt-1 truncate">—</p>
-                        <p id="sang-b-elo-rating" class="text-xs text-zinc-400 mt-1 truncate">—</p>
+                            class="w-16 h-16 rounded-xl mx-auto mb-4 border-[3px] border-zinc-700 bg-transparent flex-shrink-0"></div>
+                        <p id="sang-b-titel" class="font-semibold text-sm truncate w-full" title="Titel">—</p>
+                        <p id="sang-b-artist" class="text-xs text-zinc-400 mt-1 truncate w-full" title="Artist">—</p>
+                        <p id="sang-b-elo-rating" class="text-xs text-zinc-400 mt-1 truncate w-full">—</p>
                     </div>
                 </div>
             </div>
@@ -144,33 +146,51 @@
             indsætHeader()
             indsætAfspiller()
             opdaterAvatar()
+
+            // Ligesom backend har req.query, kan vi læse URL'en i browseren via URLSearchParams
+            const params = new URLSearchParams(window.location.search)
+            const urlUser = params.get('username')
+            
+            // Hvis vi allerede kender navnet, låser vi feltet, så brugeren ikke skal skrive det igen
+            if (urlUser) {
+                const nameInput = document.getElementById('username-input')
+                nameInput.value = urlUser
+                nameInput.readOnly = true
+                nameInput.classList.add('opacity-50', 'cursor-not-allowed')
+            }
         })
 
-        // ─── STATE ───────────────────────────────────────
-        var valgteGenrer = []
-        var username = ''
-        var aktuelPar = []
-        var rundeNummer = 0
-        var onboardingSange = []  // De 10 sange fra API — vores lokale pulje til par-valg
-        var originaleElos = {}    // Original elo inden afstemning — bruges til at vise ændringen (+12 osv.)
-        var sessionVindinger = {} // Tæller hvor mange gange en sang vinder i DENNE session
-        var seenIds = []
-        var stemmerAktiv = false  // Forhindrer dobbeltklik mens vinder-feedback vises
-        var maxRunder = 15
+        // ─── STATE (TILSTAND) ───────────────────────────────────────
+        // Dette er vores "Globale Variabler".
+        // Tænk på State som spillets aktuelle tilstand i Ludo (hvis tur er det, hvor mange brikker er i mål).
+        // Vi bruger 'let', da værdierne ændrer sig over tid.
+        let valgteGenrer = []
+        let username = ''
+        let aktuelPar = []
+        let rundeNummer = 0
+        let onboardingSange = []  // De 10 sange fra API — vores lokale pulje til par-valg
+        let originaleElos = {}    // Original elo inden afstemning — bruges til at vise ændringen (+12 osv.)
+        let sessionVindinger = {} // Tæller hvor mange gange en sang vinder i DENNE session
+        let seenIds = []
+        let stemmerAktiv = false  // Forhindrer dobbeltklik (debouncing) mens vinder-feedback vises
+        const maxRunder = 15      // const bruges her, fordi antallet af runder aldrig ændrer sig.
 
         // ─── TOGGLE GENRE ────────────────────────────────
+        // Kaldes når brugeren klikker på en genre (Pop, Rock).
         function toggleGenre(knap) {
-            var genre = knap.dataset.genre
-            var aktivFarve = knap.dataset.farve
-            var index = valgteGenrer.indexOf(genre)
+            const genre = knap.dataset.genre       // Aflæser 'data-genre' fra HTML (fx "pop")
+            const aktivFarve = knap.dataset.farve  // Aflæser 'data-farve' fra HTML (fx "bg-pink-500")
+            
+            // indexOf leder efter genren i vores liste. Hvis den IKKE findes, returnerer den -1.
+            const index = valgteGenrer.indexOf(genre)
 
             if (index !== -1) {
-                // Genre er allerede valgt — fjern den
+                // Genre er allerede valgt — fjern den fra arrayet
                 valgteGenrer.splice(index, 1)
                 knap.classList.remove(aktivFarve, 'border-white/40')
                 knap.classList.add('bg-white/5', 'border-white/10')
             } else if (valgteGenrer.length < 3) {
-                // Tilføj genre hvis der er plads
+                // Tilføj genre hvis der stadig er plads
                 valgteGenrer.push(genre)
                 knap.classList.remove('bg-white/5', 'border-white/10')
                 knap.classList.add(aktivFarve, 'border-white/40')
@@ -180,8 +200,10 @@
         }
 
         // ─── UDFYLD ONBOARDING ───────────────────────────
-        // Kaldes når brugeren klikker "Næste →" i trin 1
+        // Kaldes når brugeren klikker "Næste →" i trin 1.
+        // Ordet 'async' betyder, at denne funktion arbejder asynkront (vi skal vente på et svar fra serveren).
         async function udfuldOnboarding() {
+            // .trim() fjerner usynlige mellemrum, hvis brugeren har tastet " casper "
             username = document.getElementById('username-input').value.trim()
 
             if (username === '') {
@@ -193,16 +215,20 @@
                 return
             }
 
-            var genreParam = valgteGenrer.join(',')
-            var res = await fetch('/api/onboarding?genres=' + genreParam + '&total=10')
-            onboardingSange = await res.json()
+            // JOIN konverterer vores liste ['pop', 'rock'] til en tekststreng "pop,rock"
+            const genreParam = valgteGenrer.join(',')
+            
+            // 'await fetch' = Stop koden! Vent til tjeneren (backend) kommer tilbage med maden (sangene).
+            const res = await fetch('/api/onboarding?genres=' + genreParam + '&total=10')
+            onboardingSange = await res.json() // Konverter maden til et JavaScript array
 
             // Gem original elo for hver sang inden afstemning begynder
-            for (var i = 0; i < onboardingSange.length; i++) {
+            for (let i = 0; i < onboardingSange.length; i++) {
                 originaleElos[onboardingSange[i].id] = onboardingSange[i].elo_rating
                 sessionVindinger[onboardingSange[i].id] = 0
             }
 
+            // CSS Magi: Vi gemmer trin 1 (skjult) og viser trin 2
             document.getElementById('total-runder').textContent = maxRunder
             document.getElementById('trin-1').classList.add('hidden')
             document.getElementById('trin-2').classList.remove('hidden')
@@ -211,10 +237,11 @@
         }
 
         // ─── ELO BEREGNING (LOKALT) ──────────────────────
-        // Bruges til at holde elo ajour lokalt i browseren — samme formel som backend (eloService.js)
+        // Bruges til at holde elo ajour lokalt i browseren.
+        // Hvorfor? For at slippe for at kalde serveren HVER gang for bare at se de nye tal.
         function udregnNyElo(rating1, rating2, vinderScore) {
-            var k = 32
-            var forventetScore = 1 / (1 + Math.pow(10, (rating2 - rating1) / 400))
+            const k = 32
+            const forventetScore = 1 / (1 + Math.pow(10, (rating2 - rating1) / 400))
             return Math.round(rating1 + k * (vinderScore - forventetScore))
         }
 
@@ -224,8 +251,8 @@
         // Wildcard-dueller kun på runde 5, 10, 15
         function hentNæstePar() {
             // Find sange der ikke er vist endnu i denne omgang
-            var tilgængelige = []
-            for (var i = 0; i < onboardingSange.length; i++) {
+            let tilgængelige = []
+            for (let i = 0; i < onboardingSange.length; i++) {
                 if (seenIds.indexOf(onboardingSange[i].id) === -1) {
                     tilgængelige.push(onboardingSange[i])
                 }
@@ -234,17 +261,17 @@
             // Hvis vi løber tør for usete sange, start seenIds forfra
             if (tilgængelige.length < 2) {
                 seenIds = []
-                tilgængelige = onboardingSange.slice()
+                tilgængelige = onboardingSange.slice() // Kopiér arrayet
             }
 
-            var sangA
-            var sangB
+            let sangA
+            let sangB
             
             // Separer normale fra wildcards
-            var normaleSange = []
-            var wildcards = []
+            const normaleSange = []
+            const wildcards = []
             
-            for (var i = 0; i < tilgængelige.length; i++) {
+            for (let i = 0; i < tilgængelige.length; i++) {
                 if (tilgængelige[i].is_wildcard) {
                     wildcards.push(tilgængelige[i])
                 } else {
@@ -253,29 +280,30 @@
             }
             
             // Strategi: Kun på runde 5, 10, 15 skal wildcards være med
-            var erWildcardRunde = (rundeNummer === 4 || rundeNummer === 9 || rundeNummer === 14)
+            const erWildcardRunde = (rundeNummer === 4 || rundeNummer === 9 || rundeNummer === 14)
             
             if (erWildcardRunde && wildcards.length > 0 && normaleSange.length > 0) {
                 // Wildcard-duel: 1 wildcard + 1 NORMAL sang (ALDRIG wildcard vs wildcard)
-                var randomWildcardIndex = Math.floor(Math.random() * wildcards.length)
+                // Math.random() giver et tal mellem 0 og 0.99. Gange med length giver et random array-index.
+                const randomWildcardIndex = Math.floor(Math.random() * wildcards.length)
                 sangA = wildcards[randomWildcardIndex]
                 
-                var randomNormalIndex = Math.floor(Math.random() * normaleSange.length)
+                const randomNormalIndex = Math.floor(Math.random() * normaleSange.length)
                 sangB = normaleSange[randomNormalIndex]
             } else {
                 // Normal runde: vælg vilkårligt fra tilgængelige
-                var indexA = Math.floor(Math.random() * tilgængelige.length)
+                const indexA = Math.floor(Math.random() * tilgængelige.length)
                 sangA = tilgængelige[indexA]
-                tilgængelige.splice(indexA, 1)
+                tilgængelige.splice(indexA, 1) // Fjern A så den ikke bliver valgt igen
                 
-                var indexB = Math.floor(Math.random() * tilgængelige.length)
+                const indexB = Math.floor(Math.random() * tilgængelige.length)
                 sangB = tilgængelige[indexB]
             }
 
             aktuelPar = [sangA, sangB]
             seenIds.push(sangA.id, sangB.id)
 
-            // Opdater UI med sangenes data
+            // Opdater UI (Brugerfladen) ved at manipulere HTML'en (DOM Manipulation)
             document.getElementById('sang-a-titel').textContent = sangA.title
             document.getElementById('sang-a-artist').textContent = sangA.artist
             document.getElementById('sang-a-elo-rating').textContent = 'Elo: ' + sangA.elo_rating
@@ -284,8 +312,8 @@
             document.getElementById('sang-b-artist').textContent = sangB.artist
             document.getElementById('sang-b-elo-rating').textContent = 'Elo: ' + sangB.elo_rating
 
-            // Genrefarver til de farvede firkanter
-            var farver = {
+            // Et "Dictionary" (Object) til at slå CSS-farver op baseret på genre.
+            const farver = {
                 pop: 'border-pink-500',
                 rock: 'border-red-500',
                 'hip-hop': 'border-green-500',
@@ -295,12 +323,12 @@
             document.getElementById('sang-a-farve').className = 'w-16 h-16 rounded-xl mx-auto mb-4 border-[3px] bg-transparent ' + (farver[sangA.genre] || 'border-zinc-700')
             document.getElementById('sang-b-farve').className = 'w-16 h-16 rounded-xl mx-auto mb-4 border-[3px] bg-transparent ' + (farver[sangB.genre] || 'border-zinc-700')
 
-            // Vis eller skjul wildcard-badge
+            // .classList.toggle() tænder eller slukker for en CSS-klasse baseret på om udsagnet (sang.is_wildcard) er true eller false
             document.getElementById('sang-a-wildcard').classList.toggle('hidden', !sangA.is_wildcard)
             document.getElementById('sang-b-wildcard').classList.toggle('hidden', !sangB.is_wildcard)
 
             // Opdater progress bar og rundenummer
-            var procent = (rundeNummer / maxRunder) * 100
+            const procent = (rundeNummer / maxRunder) * 100
             document.getElementById('voting-progress').style.width = procent + '%'
             document.getElementById('runde-nummer').textContent = rundeNummer + 1
         }
@@ -312,24 +340,24 @@
             if (stemmerAktiv) return
             stemmerAktiv = true
 
-            var vinder = aktuelPar[valg]
-            var taber = aktuelPar[valg === 0 ? 1 : 0]
+            const vinder = aktuelPar[valg]
+            const taber = aktuelPar[valg === 0 ? 1 : 0]
 
             // GEM de gamle elo-værdier FØR vi opdaterer lokalt.
             // Det er vigtigt — ellers sender vi de nye værdier til backend,
             // som så beregner elo igen og ender med et forkert resultat.
-            var gammelVinderElo = vinder.elo_rating
-            var gammelTaberElo = taber.elo_rating
+            const gammelVinderElo = vinder.elo_rating
+            const gammelTaberElo = taber.elo_rating
 
             // Beregn nye elo-værdier lokalt (til at vise i UI med det samme)
-            var nyVinderElo = udregnNyElo(gammelVinderElo, gammelTaberElo, 1)
-            var nyTaberElo = udregnNyElo(gammelTaberElo, gammelVinderElo, 0)
+            const nyVinderElo = udregnNyElo(gammelVinderElo, gammelTaberElo, 1)
+            const nyTaberElo = udregnNyElo(gammelTaberElo, gammelVinderElo, 0)
 
             // Tæl en session-vinding til vinderen
             sessionVindinger[vinder.id] += 1
 
             // Opdater elo lokalt i onboardingSange-arrayet
-            for (var i = 0; i < onboardingSange.length; i++) {
+            for (let i = 0; i < onboardingSange.length; i++) {
                 if (onboardingSange[i].id === vinder.id) {
                     onboardingSange[i].elo_rating = nyVinderElo
                 }
@@ -353,17 +381,38 @@
                 console.error('Fejl ved vote i baggrunden:', err)
             })
 
+            // Beregn delta for UI feedback (hvor meget gik man op eller ned?)
+            const vinderDelta = nyVinderElo - gammelVinderElo
+            const taberDelta = nyTaberElo - gammelTaberElo
+
+            // Find feedback elementer i HTML
+            const aFloating = document.getElementById('sang-a-floating-elo')
+            const bFloating = document.getElementById('sang-b-floating-elo')
+            
+            const vinderFloating = valg === 0 ? aFloating : bFloating
+            const taberFloating = valg === 0 ? bFloating : aFloating
+
+            // Opsæt vinder feedback
+            vinderFloating.textContent = '+' + vinderDelta
+            vinderFloating.className = 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-5xl font-black text-green-400 z-20 drop-shadow-[0_0_15px_rgba(74,222,128,0.8)] pointer-events-none transition-all duration-300 scale-125'
+            
+            // Opsæt taber feedback
+            taberFloating.textContent = taberDelta
+            taberFloating.className = 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-3xl font-bold text-red-500 z-20 drop-shadow-[0_0_10px_rgba(248,113,113,0.8)] pointer-events-none transition-all duration-300 scale-90 opacity-80'
+
             // Viser vinder-feedback: vinderkortet lyser grønt, taberkortet fader ud
-            var vinderKort = document.getElementById(valg === 0 ? 'sang-a' : 'sang-b')
-            var taberKort = document.getElementById(valg === 0 ? 'sang-b' : 'sang-a')
+            const vinderKort = document.getElementById(valg === 0 ? 'sang-a' : 'sang-b')
+            const taberKort = document.getElementById(valg === 0 ? 'sang-b' : 'sang-a')
 
             vinderKort.classList.add('border-green-500', 'border-2', 'bg-green-500/10')
-            taberKort.classList.add('opacity-40')
+            taberKort.classList.add('opacity-30')
 
-            // Efter 400ms: fjern feedback og vis næste par (eller resultater)
+            // Efter 800ms: fjern feedback og vis næste par (eller resultater)
             setTimeout(function () {
+                vinderFloating.className = 'hidden'
+                taberFloating.className = 'hidden'
                 vinderKort.classList.remove('border-green-500', 'border-2', 'bg-green-500/10')
-                taberKort.classList.remove('opacity-40')
+                taberKort.classList.remove('opacity-30')
                 stemmerAktiv = false
 
                 rundeNummer++
@@ -373,30 +422,31 @@
                 } else {
                     hentNæstePar()
                 }
-            }, 400)
+            }, 800)
         }
 
         // ─── VIS RESULTATER ──────────────────────────────
         // Trukket ud i sin egen funktion så både stemPå() og hopOver() kan bruge den
         function visResultater() {
-            // Sorter efter antal session-vindinger — brugerens præference vægtes over global elo
+            // .sort() er en indbygget Javascript funktion der kan sortere arrays.
+            // Sorter efter antal session-vindinger — brugerens præference vægtes over global elo.
             onboardingSange.sort(function (a, b) {
                 return sessionVindinger[b.id] - sessionVindinger[a.id]
             })
 
             // Byg resultatlisten
-            var container = document.getElementById('resultat-liste')
+            const container = document.getElementById('resultat-liste')
             container.innerHTML = ''
 
-            for (var i = 0; i < onboardingSange.length; i++) {
-                var sang = onboardingSange[i]
-                var gammelElo = originaleElos[sang.id] || sang.elo_rating
-                var nyElo = sang.elo_rating
-                var delta = nyElo - gammelElo
-                var wins = sessionVindinger[sang.id]
+            for (let i = 0; i < onboardingSange.length; i++) {
+                const sang = onboardingSange[i]
+                const gammelElo = originaleElos[sang.id] || sang.elo_rating
+                const nyElo = sang.elo_rating
+                const delta = nyElo - gammelElo
+                const wins = sessionVindinger[sang.id]
 
-                var deltaTekst = delta > 0 ? '+' + delta : '' + delta
-                var deltaFarve = 'text-zinc-500'
+                const deltaTekst = delta > 0 ? '+' + delta : '' + delta
+                let deltaFarve = 'text-zinc-500' // let, fordi den ændrer sig på næste linje
                 if (delta > 0) { deltaFarve = 'text-green-400' }
                 if (delta < 0) { deltaFarve = 'text-red-400' }
 
@@ -418,11 +468,16 @@
 
         // ─── GEM MIXTAPE OG GÅ VIDERE ────────────────────
         async function gemMixtapeOgGåVidere() {
-            var mixtapeNavn = document.getElementById('mixtape-name-input').value.trim() || 'Mit Mixtape'
+            const mixtapeNavn = document.getElementById('mixtape-name-input').value.trim()
+            
+            if (mixtapeNavn === '') {
+                alert('Du skal give dit mixtape et navn!')
+                return
+            }
 
             // Saml alle sang-IDs fra den rangerede liste
-            var gemteIds = []
-            for (var i = 0; i < onboardingSange.length; i++) {
+            const gemteIds = []
+            for (let i = 0; i < onboardingSange.length; i++) {
                 gemteIds.push(onboardingSange[i].id)
             }
 
@@ -436,8 +491,8 @@
                         name: mixtapeNavn
                     })
                 })
-                // Redirect til billboard og åbn mixtape-view automatisk
-                window.location.href = 'billboard.html?username=' + encodeURIComponent(username) + '&view=mixtape'
+                // Redirect til billboard og åbn mixtape-view automatisk med det nye mixtape valgt
+                window.location.href = 'billboard.html?username=' + encodeURIComponent(username) + '&view=mixtape&mixtapeName=' + encodeURIComponent(mixtapeNavn)
             } catch (error) {
                 console.error('Kunne ikke gemme mixtape:', error)
                 alert('Der opstod en fejl. Prøv igen.')

@@ -16,9 +16,10 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 // ROUTE 1: Hent alle unikke genrer
-// her bruger vi pool.query til at hente alle unikke genrer fra databasen
-// og det fungere ved at det returnere en liste over alle unikke genrer i databasen
-// fun fact vi har 113 genrer i vores database
+// Tænk på en "route" (rute) som en tjener på en restaurant. 
+// Når frontend beder tjeneren om '/api/genres', går tjeneren ud i køkkenet (databasen),
+// og beder om 'DISTINCT genre' (alle unikke genrer).
+// Hvis alt går godt, serverer vi dem tilbage (res.json). Hvis det går galt, kaster vi en 500-fejl.
 app.get('/api/genres', async function (req, res) {
     try {
         const resultat = await pool.query(
@@ -30,9 +31,11 @@ app.get('/api/genres', async function (req, res) {
     }
 });
 
-// ROUTE 2: Hent to sange til pairwise sammenligning
-// her bruger vi hent2PairwiseSange fra recommendationService.js til at hente to tilfældige sange fra en given genre
-// seen er en liste over sange der allerede er vist, så vi ikke viser samme par to gange
+// ROUTE 2: Hent to sange til pairwise sammenligning (Onboarding)
+// Frontend sender en "query parameter" (?genre=pop). Tjeneren kigger på det (req.query.genre)
+// for at vide præcis, hvilken genre brugeren ønsker.
+// Vi bruger variablen 'seen' (set) til at huske, hvilke sange vi allerede har vist, 
+// så brugeren ikke stemmer på den samme sang to gange.
 app.get('/api/pair', async function (req, res) {
     try {
         const genre = req.query.genre;
@@ -48,8 +51,9 @@ app.get('/api/pair', async function (req, res) {
 });
 
 // ROUTE 3: Modtag stemme og opdater Elo ratings
-// her bruger vi updatereElo fra eloService.js til at opdatere elo ratings for de to sange der blev stemt på
-// og det fungere ved at det tager elo rating for de to sange og opdaterer dem baseret på resultatet
+// Her bruger vi 'app.post'. Forskellen på GET og POST er, at med GET beder vi bare om data.
+// Med POST *sender* vi ny data op til serveren for at ændre noget (ligesom at poste et brev).
+// req.body indeholder selve brevet: Hvem vandt, hvem tabte, og hvad var deres gamle point?
 app.post('/api/vote', async function (req, res) {
     try {
         const { winner_id, loser_id, winner_elo, loser_elo, username } = req.body;
@@ -95,8 +99,8 @@ app.get('/api/next-track', async function (req, res) {
 });
 
 // ROUTE 5: Hent onboarding sange
-// her bruger vi hentOnboardingSange fra recommendationService.js til at hente onboarding sange
-// det fungere ved at det finder de sang der har den given genre og vælger dem baseret på elo og tilfældighed
+// Når brugeren har valgt op til 3 genrer, sender de dem ind som et array.
+// Vores 'recommendationService' blander derefter en god pulje af sange (både populære og wildcards).
 app.get('/api/onboarding', async function (req, res) {
     try {
         const genres = req.query.genres ? req.query.genres.split(',') : [];
@@ -109,8 +113,8 @@ app.get('/api/onboarding', async function (req, res) {
 });
 
 // ROUTE 6: Gem mixtape (POST)
-// her bruger vi gemBrugerMixtape fra mixtapeService.js til at gemme mixtape
-// det fungere ved at det tager et brugernavn, sang-id'er og et valgfrit mixtape navn og gemmer dem
+// Her sender brugeren deres færdige, rangerede liste op til serveren.
+// Vi gemmer hver enkelt sang i 'user_mixtapes'-tabellen knyttet til brugerens navn.
 app.post('/api/mixtape', async function (req, res) {
     try {
         const { username, trackIds, name } = req.body;
@@ -127,7 +131,9 @@ app.post('/api/mixtape', async function (req, res) {
 });
 
 // ROUTE 7: Hent mixtape (GET)
-// her bruger vi hentBrugerMixtape fra mixtapeService.js til at hente mixtape
+// Frontend beder om at få vist en brugers mixtape. 
+// Hvis de beder om et specifikt navn (fx "Fredags Rock"), henter vi dét. 
+// Ellers henter vi hele deres "Privat Billboard" (alle sange de nogensinde har gemt).
 app.get('/api/mixtape', async function (req, res) {
     try {
         const username = req.query.username;
@@ -153,8 +159,9 @@ app.get('/api/mixtapes', async function (req, res) {
 });
 
 // ROUTE 8: Nulstil bruger (DELETE)
-// her bruger vi nulstilBruger fra mixtapeService.js til at nulstille en brugers mixtape og elo ratings
-// det fungere ved at det tager et brugernavn og fjerner alle sange fra brugerens mixtape og elo ratings
+// DELETE er en meget destruktiv metode. Vi bruger den til at lade en bruger slette alt sit data.
+// Tænk på HTTP metoder som CRUD:
+// Create (POST), Read (GET), Update (PUT/PATCH), Delete (DELETE).
 app.delete('/api/reset', async function (req, res) {
     try {
         const username = req.query.username;
@@ -171,8 +178,8 @@ app.delete('/api/reset', async function (req, res) {
 });
 
 // ROUTE 9: Hent billboard (GET)
-// her bruger vi hentBillboard fra recommendationService.js til at hente billboard
-// det fungere ved at det tager en genre og en artist og returnere en liste over de sang der har den given genre og artist
+// Henter en global top 20 liste over de bedste sange.
+// Kan filtreres på enten en specifik genre eller en bestemt artist.
 app.get('/api/billboard', async function (req, res) {
     try {
         const genre = req.query.genre;
@@ -185,8 +192,8 @@ app.get('/api/billboard', async function (req, res) {
 });
 
 // ROUTE 10: Flet mixtapes (GET)
-// her bruger vi fletMixtapes fra mergeService.js til at flette to brugeres mixtapes
-// det fungere ved at det tager to brugernavne og returnere en samlet liste sorteret efter fælles smag
+// En sjov social feature: Vi tager to brugeres mixtapes (userA og userB),
+// finder de sange de begge to kan lide, og returnerer et flettet mixtape (Merge).
 app.get('/api/merge', async function (req, res) {
     try {
         const userA = req.query.userA;
@@ -199,7 +206,7 @@ app.get('/api/merge', async function (req, res) {
 });
 
 // ROUTE 11: Hent næste sang fra mixtape
-// her bruger vi hentNæsteSangFraMixtape fra queueService.js til at hente næste sang fra en brugers mixtape
+// Bruges af musikafspilleren til automatisk at skifte til den næste sang i køen.
 // GET /api/mixtape/next?username=casper&index=0
 app.get('/api/mixtape/next', async function (req, res) {
     try {
@@ -229,7 +236,8 @@ app.get('/api/search', async function (req, res) {
 });
 
 // Start serveren (Express.js)
-// her starter vi serveren og viser en besked i terminalen om at serveren kører
+// Serveren sidder nu og lytter (listen) konstant på port 3000.
+// Ligesom en telefon der er tændt og venter på, at nogen ringer til den.
 app.listen(PORT, function () {
     console.log('Server kører på http://localhost:' + PORT);
 });

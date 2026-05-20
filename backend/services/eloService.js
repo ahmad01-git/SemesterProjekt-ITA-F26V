@@ -2,18 +2,17 @@ const { pool } = require('../../db/connect');
 
 const K = 32;
 
-// her bruger vi elo rating systemet til at beregne den nye elo rating for to sange
-// den tager elo rating for de to sange og opdatere dem baseret på resultatet
-// det fungere ved at det beregner den forventede score for hver sang
-// og opdatere elo rating baseret på den forventede score og resultatet
+// Elo er et matematisk system lånt fra Skak.
+// Idéen er: Hvis en bundskraber slår en verdensmester, skal den vinde vildt mange point!
+// Hvis en verdensmester slår en bundskraber, vinder den næsten ingen point (det var forventet).
+// actualScore: 1 hvis sangen vandt, 0 hvis den tabte.
 function updatereElo(rating1, rating2, actualScore) {
     const p1 = 1 / (1 + Math.pow(10, (rating2 - rating1) / 400));
     const nyRating = rating1 + K * (actualScore - p1);
     return Math.round(nyRating);
 }
 
-// her gemmer vi elo rating for en given sang i databasen
-// den tager songId og nyElo som argumenter og opdatere elo rating for den givne sang
+// Gemmer den globale elo-rating. Dette påvirker sangens placering for ALLE brugere (Billboard).
 async function gemEloTilDatabase(songId, nyElo) {
     await pool.query(
         "UPDATE tracks SET elo_rating = $1 WHERE id = $2",
@@ -21,8 +20,8 @@ async function gemEloTilDatabase(songId, nyElo) {
     );
 }
 
-// her gemmer vi en specifik brugers personlige elo rating for en sang
-// hvis brugeren allerede har en elo for sangen, opdateres den
+// Gemmer den personlige elo-rating. Dette påvirker KUN brugerens egen "Privat Billboard".
+// Ligesom et almindeligt bibliotek vs din egen bogreol derhjemme.
 async function gemBrugerEloTilDatabase(username, songId, nyElo) {
     if (!username) return; // Sikkerhed, hvis username ikke er sendt
     
