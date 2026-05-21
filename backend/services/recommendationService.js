@@ -105,20 +105,11 @@ async function hentOnboardingSange(genres) {
             baseForespørgsel += " AND id NOT IN (" + placeholders.join(", ") + ")";
         }
 
-        // Ægte "Underdogs":
-        // I stedet for bare at vælge fuldstændig tilfældigt, finder vi først de 20 sange 
-        // i genren, der har den absolut DÅRLIGSTE elo-rating. 
-        // Så vælger vi tilfældigt blandt disse 20. Det giver bundskraberen en chance for at blive stjerne!
+        // Ægte "Underdogs" / Wildcards:
+        // Vi vælger blot fuldstændig tilfældige sange fra den valgte genre.
+        // Databasen har allerede fået besked på at ignorere "eksisterendeIds" (vores "seen"-liste).
         parametre.push(mangler);
-        const forespørgsel = `
-            SELECT * FROM (
-                ${baseForespørgsel}
-                ORDER BY elo_rating ASC
-                LIMIT 20
-            ) AS underdogs
-            ORDER BY RANDOM()
-            LIMIT $${parametre.length}
-        `;
+        const forespørgsel = baseForespørgsel + " ORDER BY RANDOM() LIMIT $" + parametre.length;
 
         const tilfældigeSange = await pool.query(forespørgsel, parametre);
 

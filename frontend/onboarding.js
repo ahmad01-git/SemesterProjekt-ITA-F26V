@@ -321,6 +321,12 @@ function stemPå(valg) {
 // ─── VIS RESULTATER ──────────────────────────────
 // Trukket ud i sin egen funktion så både stemPå() og hopOver() kan bruge den
 function visResultater() {
+    // 🎓 DEBUGGING: Trin 3 - Resultater
+    console.log("====================================")
+    console.log("VISER RESULTATER: Sorterer listen...")
+    console.log("Antal sange i puljen: " + onboardingSange.length)
+    console.log("====================================")
+
     // .sort() er en indbygget Javascript funktion der kan sortere arrays.
     // Sorter efter antal session-vindinger — brugerens præference vægtes over global elo.
     onboardingSange.sort(function (a, b) {
@@ -373,6 +379,13 @@ async function gemMixtapeOgGåVidere() {
     for (let i = 0; i < onboardingSange.length; i++) {
         gemteIds.push(onboardingSange[i].id)
     }
+
+    // 🎓 DEBUGGING: Trin 4 - Gemmer
+    console.log("====================================")
+    console.log("GEMMER MIXTAPE: " + mixtapeNavn)
+    console.log("Sender følgende " + gemteIds.length + " sang-IDs til databasen:")
+    console.log(gemteIds)
+    console.log("====================================")
 
     try {
         await fetch('/api/mixtape', {
