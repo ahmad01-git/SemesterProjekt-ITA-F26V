@@ -168,6 +168,12 @@ app.get('/api/billboard', async function (req, res) {
     }
 });
 
+// Catch-all route til SPA (Single Page Application)
+// Sørger for at Express sender index.html tilbage, selv hvis man refresher siden
+app.get('*', function (req, res) {
+    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
+
 // Start serveren (Express.js)
 // Serveren sidder nu og lytter (listen) konstant på port 3000.
 // Ligesom en telefon der er tændt og venter på, at nogen ringer til den.

@@ -398,7 +398,7 @@ async function gemMixtapeOgGåVidere() {
             })
         })
         // Redirect til billboard og åbn mixtape-view automatisk med det nye mixtape valgt
-        window.location.href = 'billboard.html?username=' + encodeURIComponent(username) + '&view=mixtape&mixtapeName=' + encodeURIComponent(mixtapeNavn)
+        window.location.href = 'index.html?username=' + encodeURIComponent(username) + '&view=mixtape&mixtapeName=' + encodeURIComponent(mixtapeNavn)
     } catch (error) {
         console.error('Fejl ved gem:', error)
         alert('Der skete en fejl. Prøv igen senere.')

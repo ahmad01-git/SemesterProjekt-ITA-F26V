@@ -54,25 +54,25 @@ function indsætHeader() {
 // Navigerer til Billboard-viewet
 function gåTilBillboard() {
     const user = getCurrentUser()
-    // Hvis vi allerede er på billboard.html — skift bare kassen der vises (SPA logik)
-    if (window.location.pathname.includes('billboard.html')) {
+    // Hvis vi allerede er på index.html — skift bare kassen der vises (SPA logik)
+    if (window.location.pathname.includes('index.html')) {
         if (typeof skiftView === 'function') {
             skiftView('billboard')
         }
     } else {
-        window.location.href = 'billboard.html?username=' + user
+        window.location.href = 'index.html?username=' + user
     }
 }
 
 // Navigerer til Mixtape-viewet
 function gåTilMixtape() {
     const user = getCurrentUser()
-    if (window.location.pathname.includes('billboard.html')) {
+    if (window.location.pathname.includes('index.html')) {
         if (typeof skiftView === 'function') {
             skiftView('mixtape')
         }
     } else {
-        window.location.href = 'billboard.html?username=' + user + '&view=mixtape'
+        window.location.href = 'index.html?username=' + user + '&view=mixtape'
     }
 }
 
