@@ -3,8 +3,8 @@ const path = require('path');
 const { pool } = require('../db/connect');
 
 // Vi henter vores funktioner fra de separate service-filer
-const { updatereElo, gemEloTilDatabase, gemBrugerEloTilDatabase } = require('./services/eloService');
-const { hent2PairwiseSange, hentOnboardingSange, hentBillboard } = require('./services/recommendationService');
+const { opdaterElo, gemEloTilDatabase, gemBrugerEloTilDatabase } = require('./services/eloService');
+const { hentPairwiseSange, hentOnboardingSange, hentBillboard } = require('./services/recommendationService');
 const { gemBrugerMixtape, hentBrugerMixtape, hentBrugerMixtapeNavne, nulstilBruger } = require('./services/mixtapeService');
 const { fletMixtapes } = require('./services/mergeService');
 const { hentNæsteSangFraMixtape } = require('./services/queueService');
@@ -43,7 +43,7 @@ app.get('/api/pair', async function (req, res) {
 
         const seen = req.query.seen ? req.query.seen.split(',').map(Number) : [];
 
-        const sange = await hent2PairwiseSange(genre, seen);
+        const sange = await hentPairwiseSange(genre, seen);
         res.json(sange);
     } catch (err) {
         res.status(500).json({ error: "Fejl ved hentning af par" });
@@ -63,8 +63,8 @@ app.post('/api/vote', async function (req, res) {
             return res.status(400).json({ error: "winner_id, loser_id, winner_elo og loser_elo er påkrævet" });
         }
 
-        const nyVinderRating = updatereElo(winner_elo, loser_elo, 1);
-        const nyTaberRating = updatereElo(loser_elo, winner_elo, 0);
+        const nyVinderRating = opdaterElo(winner_elo, loser_elo, 1);
+        const nyTaberRating = opdaterElo(loser_elo, winner_elo, 0);
 
         await gemEloTilDatabase(winner_id, nyVinderRating);
         await gemEloTilDatabase(loser_id, nyTaberRating);
@@ -205,19 +205,7 @@ app.get('/api/merge', async function (req, res) {
     }
 });
 
-// ROUTE 11: Hent næste sang fra mixtape
-// Bruges af musikafspilleren til automatisk at skifte til den næste sang i køen.
-// GET /api/mixtape/next?username=casper&index=0
-app.get('/api/mixtape/next', async function (req, res) {
-    try {
-        const username = req.query.username;
-        const index = parseInt(req.query.index) || 0;
-        const sang = await hentNæsteSangFraMixtape(username, index);
-        res.json(sang);
-    } catch (err) {
-        res.status(500).json({ error: "Kunne ikke hente næste sang" });
-    }
-});
+
 
 // ROUTE 12: Søgefunktion
 // her søger vi på sange der matcher titlen eller artistens navn

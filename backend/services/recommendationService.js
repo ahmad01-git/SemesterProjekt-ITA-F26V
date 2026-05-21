@@ -3,7 +3,7 @@ const { pool } = require('../../db/connect');
 // Her vælger vi to tilfældige sange fra en given genre til vores Pairwise (1 mod 1) afstemning.
 // Vi sender 'seen' med, som er en liste over sang-IDs vi allerede har vist.
 // Tænk på det som at trække kort fra en kortbunke: Vi vil ikke trække det samme kort to gange!
-async function hent2PairwiseSange(genre, seen) {
+async function hentPairwiseSange(genre, seen) {
     // Vi starter med en basis-søgning: "Find alle sange i denne genre"
     let forespørgsel = "SELECT * FROM tracks WHERE genre = $1";
     const parametre = [genre];
@@ -159,7 +159,7 @@ async function hentBillboard(genre, artist) {
 }
 
 module.exports = {
-    hent2PairwiseSange,
+    hentPairwiseSange,
     hentOnboardingSange,
     hentBillboard
 };

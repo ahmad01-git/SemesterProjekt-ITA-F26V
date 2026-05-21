@@ -3,15 +3,25 @@ const { pool } = require('../../db/connect');
 // Når en bruger har færdiggjort sin afstemning, skal de 15 sange gemmes.
 // Vi får et "Array" (en liste) af sang-IDs ('trackIds') og et navn på mixtapet.
 async function gemBrugerMixtape(username, trackIds, mixtapeName = 'Mit Mixtape') {
-    // Et simpelt 'for...of' loop. 
-    // Tænk på det som at tage én bog ad gangen fra en stak og sætte den ind på bogreolen.
-    for (const trackId of trackIds) {
-        // Bemærk: Hvis der var UNIQUE constraint på (username, track_id), ville DO NOTHING virke.
-        // I Neon uden constraint gemmer vi bare rækken.
-        await pool.query(
-            "INSERT INTO user_mixtapes (username, track_id, mixtape_name) VALUES ($1, $2, $3)",
-            [username, trackId, mixtapeName]
-        );
+    // Slet først eventuelle eksisterende sange i dette mixtape for at undgå dubletter
+    await pool.query(
+        "DELETE FROM user_mixtapes WHERE username = $1 AND mixtape_name = $2",
+        [username, mixtapeName]
+    );
+
+    // Et klassisk for-loop for at gå igennem alle sange
+    for (var i = 0; i < trackIds.length; i++) {
+        var trackId = trackIds[i];
+        try {
+            await pool.query(
+                "INSERT INTO user_mixtapes (username, track_id, mixtape_name) VALUES ($1, $2, $3)",
+                [username, trackId, mixtapeName]
+            );
+        } catch (error) {
+            console.error("Kunne ikke gemme sang " + trackId + ": ", error);
+            // Hvis én sang fejler (fx netværksfejl), fortsætter vi til den næste
+            // uden at crashe hele processen.
+        }
     }
 }
 
@@ -47,10 +57,9 @@ async function hentBrugerMixtape(username, mixtapeName) {
         
         // Når vi bruger DISTINCT ON i Postgres, skal vi sortere efter ID først.
         // Derfor sorterer vi resultatet matematisk her i JavaScript bagefter,
-        // så den sang med flest point lander i toppen af listen.
-        return resultat.rows.sort((a, b) => {
-            const eloA = a.user_elo_rating || a.elo_rating;
-            const eloB = b.user_elo_rating || b.elo_rating;
+        return resultat.rows.sort(function (a, b) {
+            var eloA = a.user_elo_rating || a.elo_rating;
+            var eloB = b.user_elo_rating || b.elo_rating;
             return eloB - eloA;
         });
     }
@@ -62,7 +71,9 @@ async function hentBrugerMixtapeNavne(username) {
         "SELECT DISTINCT mixtape_name FROM user_mixtapes WHERE username = $1",
         [username]
     );
-    return resultat.rows.map(row => row.mixtape_name);
+    return resultat.rows.map(function (row) {
+        return row.mixtape_name;
+    });
 }
 
 // Sletter ALT data for en specifik bruger.

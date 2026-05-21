@@ -6,7 +6,7 @@ const K = 32;
 // Idéen er: Hvis en bundskraber slår en verdensmester, skal den vinde vildt mange point!
 // Hvis en verdensmester slår en bundskraber, vinder den næsten ingen point (det var forventet).
 // actualScore: 1 hvis sangen vandt, 0 hvis den tabte.
-function updatereElo(rating1, rating2, actualScore) {
+function opdaterElo(rating1, rating2, actualScore) {
     const p1 = 1 / (1 + Math.pow(10, (rating2 - rating1) / 400));
     const nyRating = rating1 + K * (actualScore - p1);
     return Math.round(nyRating);
@@ -36,7 +36,7 @@ async function gemBrugerEloTilDatabase(username, songId, nyElo) {
 }
 
 module.exports = {
-    updatereElo,
+    opdaterElo,
     gemEloTilDatabase,
     gemBrugerEloTilDatabase
 };
