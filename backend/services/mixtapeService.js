@@ -2,26 +2,34 @@ const { pool } = require('../../db/connect');
 
 // Når en bruger har færdiggjort sin afstemning, skal de 15 sange gemmes.
 // Vi får et "Array" (en liste) af sang-IDs ('trackIds') og et navn på mixtapet.
-async function gemBrugerMixtape(username, trackIds, mixtapeName = 'Mit Mixtape') {
-    // Slet først eventuelle eksisterende sange i dette mixtape for at undgå dubletter
-    await pool.query(
-        "DELETE FROM user_mixtapes WHERE username = $1 AND mixtape_name = $2",
-        [username, mixtapeName]
-    );
+async function gemBrugerMixtape(username, trackIds, name = '') {
+    // 🎓 DEBUGGING:
+    console.log("-> [DB] gemBrugerMixtape kaldes for bruger: " + username);
+    console.log("-> [DB] Sletter eksisterende mixtape med navnet: '" + name + "' (hvis det findes)");
+    
+    // Vi bruger transaktioner til at sikre, at vi sletter de gamle sange, 
+    // inden vi gemmer de nye (undgår dubletter).
+    await pool.query('BEGIN');
+    try {
+        await pool.query(
+            "DELETE FROM user_mixtapes WHERE username = $1 AND mixtape_name = $2",
+            [username, name]
+        );
 
-    // Et klassisk for-loop for at gå igennem alle sange
-    for (var i = 0; i < trackIds.length; i++) {
-        var trackId = trackIds[i];
-        try {
+        console.log("-> [DB] Indsætter " + trackIds.length + " nye sange...");
+        for (let i = 0; i < trackIds.length; i++) {
             await pool.query(
                 "INSERT INTO user_mixtapes (username, track_id, mixtape_name) VALUES ($1, $2, $3)",
-                [username, trackId, mixtapeName]
+                [username, trackIds[i], name]
             );
-        } catch (error) {
-            console.error("Kunne ikke gemme sang " + trackId + ": ", error);
-            // Hvis én sang fejler (fx netværksfejl), fortsætter vi til den næste
-            // uden at crashe hele processen.
         }
+
+        await pool.query('COMMIT');
+        console.log("-> [DB] Mixtape gemt med succes!");
+    } catch (err) {
+        await pool.query('ROLLBACK');
+        console.error("-> [DB FEJL] Fejl under gemning af mixtape:", err);
+        throw err;
     }
 }
 

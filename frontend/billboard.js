@@ -82,8 +82,15 @@ async function hentBillboard() {
         const genre = document.getElementById('billboard-genre-filter').value
         const url = genre ? '/api/billboard?genre=' + genre : '/api/billboard'
 
+        console.log("====================================")
+        console.log("-> Henter global billboard liste...")
+        console.log("-> Filter valgt: " + (genre || 'Alle genrer'))
+        
         const response = await fetch(url)
         const sange = await response.json()
+        
+        console.log("<- Fandt " + sange.length + " sange til billboardet")
+        console.log("====================================")
 
         sangeListe = sange  // Gem så afspilSang() ved hvad der er på skærmen nu
 
@@ -149,8 +156,16 @@ async function hentMixtape() {
         }
 
         // 4. Hent sangene!
+        console.log("====================================")
+        console.log("-> Henter mixtape fra databasen...")
+        console.log("-> Bruger: " + username)
+        console.log("-> Mixtape: " + (valgtMixtape || 'Privat Billboard (Alle)'))
+
         const res = await fetch(url)
         const sange = await res.json()
+
+        console.log("<- Fandt " + (sange ? sange.length : 0) + " sange til mixtapet")
+        console.log("====================================")
 
         // Hvis brugeren aldrig har lavet et mixtape, viser vi "Start Onboarding" kassen.
         if (!sange || sange.length === 0) {
