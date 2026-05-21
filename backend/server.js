@@ -5,9 +5,7 @@ const { pool } = require('../db/connect');
 // Vi henter vores funktioner fra de separate service-filer
 const { opdaterElo, gemEloTilDatabase, gemBrugerEloTilDatabase } = require('./services/eloService');
 const { hentPairwiseSange, hentOnboardingSange, hentBillboard } = require('./services/recommendationService');
-const { gemBrugerMixtape, hentBrugerMixtape, hentBrugerMixtapeNavne, nulstilBruger } = require('./services/mixtapeService');
-const { fletMixtapes } = require('./services/mergeService');
-const { hentNæsteSangFraMixtape } = require('./services/queueService');
+const { gemBrugerMixtape, hentBrugerMixtape, hentBrugerMixtapeNavne } = require('./services/mixtapeService');
 
 const app = express();
 const PORT = 3000;
@@ -87,23 +85,6 @@ app.post('/api/vote', async function (req, res) {
     }
 });
 
-// ROUTE 4: Hent næste sang fra brugerens mixtape (bruges af afspilleren)
-app.get('/api/next-track', async function (req, res) {
-    try {
-        const username = req.query.username;
-        const index = parseInt(req.query.index) || 0;
-
-        if (!username) {
-            return res.status(400).json({ error: "username er påkrævet" });
-        }
-
-        const sang = await hentNæsteSangFraMixtape(username, index);
-        res.json(sang);
-    } catch (err) {
-        res.status(500).json({ error: "Kunne ikke hente næste sang" });
-    }
-});
-
 // ROUTE 5: Hent onboarding sange
 // Når brugeren har valgt op til 3 genrer, sender de dem ind som et array.
 // Vores 'recommendationService' blander derefter en god pulje af sange (både populære og wildcards).
@@ -173,25 +154,6 @@ app.get('/api/mixtapes', async function (req, res) {
     }
 });
 
-// ROUTE 8: Nulstil bruger (DELETE)
-// DELETE er en meget destruktiv metode. Vi bruger den til at lade en bruger slette alt sit data.
-// Tænk på HTTP metoder som CRUD:
-// Create (POST), Read (GET), Update (PUT/PATCH), Delete (DELETE).
-app.delete('/api/reset', async function (req, res) {
-    try {
-        const username = req.query.username;
-
-        if (!username) {
-            return res.status(400).json({ error: "username er påkrævet" });
-        }
-
-        await nulstilBruger(username);
-        res.json({ success: true, message: "Bruger nulstillet" });
-    } catch (err) {
-        res.status(500).json({ error: "Kunne ikke nulstille bruger" });
-    }
-});
-
 // ROUTE 9: Hent billboard (GET)
 // Henter en global top 20 liste over de bedste sange.
 // Kan filtreres på enten en specifik genre eller en bestemt artist.
@@ -203,38 +165,6 @@ app.get('/api/billboard', async function (req, res) {
         res.json(resultater);
     } catch (err) {
         res.status(500).json({ error: "Fejl ved hentning af Billboard" });
-    }
-});
-
-// ROUTE 10: Flet mixtapes (GET)
-// En sjov social feature: Vi tager to brugeres mixtapes (userA og userB),
-// finder de sange de begge to kan lide, og returnerer et flettet mixtape (Merge).
-app.get('/api/merge', async function (req, res) {
-    try {
-        const userA = req.query.userA;
-        const userB = req.query.userB;
-        const flettetListe = await fletMixtapes(userA, userB);
-        res.json(flettetListe);
-    } catch (err) {
-        res.status(500).json({ error: "Kunne ikke flette mixtapes" });
-    }
-});
-
-
-
-// ROUTE 12: Søgefunktion
-// her søger vi på sange der matcher titlen eller artistens navn
-// GET /api/search?q=beatles
-app.get('/api/search', async function (req, res) {
-    try {
-        const søgeTekst = req.query.q;
-        const resultat = await pool.query(
-            "SELECT * FROM tracks WHERE title ILIKE $1 OR artist ILIKE $1 LIMIT 20",
-            ['%' + søgeTekst + '%']
-        );
-        res.json(resultat.rows);
-    } catch (err) {
-        res.status(500).json({ error: "Søgning fejlede" });
     }
 });
 

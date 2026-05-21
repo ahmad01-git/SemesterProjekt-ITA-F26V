@@ -84,24 +84,8 @@ async function hentBrugerMixtapeNavne(username) {
     });
 }
 
-// Sletter ALT data for en specifik bruger.
-// Det svarer til at smide deres lånerkort og alle deres bøger ud af biblioteket.
-async function nulstilBruger(username) {
-    // slet mixtape for brugeren
-    await pool.query("DELETE FROM user_mixtapes WHERE username = $1", [username]);
-
-    // user_elo tabellen er valgfri - den sletter vi kun hvis den eksisterer
-    const tabelTjek = await pool.query(
-        "SELECT 1 FROM information_schema.tables WHERE table_name = 'user_elo'"
-    );
-    if (tabelTjek.rows.length > 0) {
-        await pool.query("DELETE FROM user_elo WHERE username = $1", [username]);
-    }
-}
-
 module.exports = {
     gemBrugerMixtape,
     hentBrugerMixtape,
-    hentBrugerMixtapeNavne,
-    nulstilBruger
+    hentBrugerMixtapeNavne
 };
