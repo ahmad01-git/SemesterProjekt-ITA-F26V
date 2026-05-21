@@ -170,7 +170,7 @@ app.get('/api/billboard', async function (req, res) {
 
 // Catch-all route til SPA (Single Page Application)
 // Sørger for at Express sender index.html tilbage, selv hvis man refresher siden
-app.get('*', function (req, res) {
+app.use(function (req, res) {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
